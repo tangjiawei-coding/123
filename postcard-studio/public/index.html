@@ -4,7 +4,17 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>明信片生成 · Photo Postcard</title>
+<!-- 霞鹜文楷 GB 屏幕版（CDN 切片，按需加载） -->
+<link rel="stylesheet" href="fonts/lxgw-wenkai-gb.css">
 <style>
+  /* ====== 艺术字体声明（本地） ====== */
+  @font-face{font-family:'Playfair Display';src:url('fonts/PlayfairDisplay.ttf') format('truetype');font-display:swap}
+  @font-face{font-family:'Great Vibes';src:url('fonts/GreatVibes.ttf') format('truetype');font-display:swap}
+  @font-face{font-family:'Pacifico';src:url('fonts/Pacifico.ttf') format('truetype');font-display:swap}
+  @font-face{font-family:'Bebas Neue';src:url('fonts/BebasNeue.ttf') format('truetype');font-display:swap}
+  @font-face{font-family:'Lobster';src:url('fonts/Lobster.ttf') format('truetype');font-display:swap}
+  @font-face{font-family:'Dancing Script';src:url('fonts/DancingScript.ttf') format('truetype');font-display:swap}
+
   :root{
     --ivory:#F3F0E8;
     --ink:#2B2A28;
@@ -13,12 +23,20 @@
     --accent:#7A5A3A;
     --paper:#FBF9F4;
     --accent-soft:rgba(122,90,58,.1);
+    /* 明信片字体（JS 动态写入，带默认值） */
+    --quote-cn-font:"LXGW WenKai GB Screen R", "Microsoft YaHei", sans-serif;
+    --quote-en-font:"Playfair Display", Georgia, serif;
+    --date-font:"Playfair Display", Georgia, serif;
   }
   *{box-sizing:border-box}
   html,body{margin:0;padding:0}
   body{
     font-family:-apple-system,"Segoe UI","Microsoft YaHei",sans-serif;
-    background:linear-gradient(180deg,#EDE7DA 0%,#E5DECF 100%);
+    background:
+      linear-gradient(180deg, rgba(237,231,218,0.82) 0%, rgba(229,222,207,0.88) 100%),
+      url('https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=Soft%20watercolor%20manga%20healing%20illustration%20background%2C%20warm%20pastel%20cream%20and%20beige%20tones%2C%20gentle%20fluffy%20clouds%2C%20tiny%20cozy%20cottage%20with%20flower%20garden%2C%20soft%20morning%20sunlight%2C%20dreamy%20peaceful%20atmosphere%2C%20cute%20minimal%20details%2C%20light%20and%20airy%2C%20suitable%20as%20website%20background&image_size=landscape_16_9') center/cover no-repeat fixed,
+      linear-gradient(180deg,#EDE7DA 0%,#E5DECF 100%);
+    background-color:#EDE7DA;
     color:var(--ink);
     min-height:100vh;
     padding:24px 16px 64px;
@@ -111,6 +129,14 @@
   select:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
   .hint{font-size:12px;color:#9A938A;margin-top:6px}
 
+  /* 字体选择网格 */
+  .font-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:6px}
+  .font-cell{display:flex;flex-direction:column;gap:4px}
+  .font-cell .sub-lbl{font-size:11px;color:var(--ink-soft);font-weight:600;letter-spacing:.04em}
+  .font-cell select{max-width:none;padding:10px 12px;font-size:14px}
+  .font-cell select option{padding:8px}
+  @media(max-width:560px){.font-grid{grid-template-columns:1fr 1fr}}
+
   /* 模式选择 */
   .mode-row{display:flex;gap:10px;margin-top:6px;flex-wrap:wrap}
   .mode-card{
@@ -175,9 +201,9 @@
     color:var(--accent);font-family:Georgia,serif;font-size:10px;text-align:center;line-height:1.1;
     transform:rotate(-4deg);opacity:.7;
   }
-  .pc-text .quote{font-family:Georgia,"Times New Roman",serif;font-size:25px;line-height:1.5;color:var(--ink);font-weight:400}
+  .pc-text .quote{font-family:var(--quote-en-font),var(--quote-cn-font),Georgia,"Times New Roman",serif;font-size:25px;line-height:1.5;color:var(--ink);font-weight:400}
   .pc-text .quote::before{content:"“";font-size:40px;color:var(--accent);line-height:0;vertical-align:-10px;margin-right:4px}
-  .pc-text .meta{margin-top:22px;font-size:12px;color:var(--ink-soft);letter-spacing:.04em}
+  .pc-text .meta{margin-top:22px;font-size:12px;color:var(--ink-soft);letter-spacing:.04em;font-family:var(--date-font),Georgia,serif}
   .pc-text .divider{height:1px;background:var(--line);margin:20px 0;width:60px}
 
   .spinner{width:16px;height:16px;border:2px solid #d8d2c5;border-top-color:var(--accent);border-radius:50%;animation:spin .8s linear infinite;display:inline-block;vertical-align:middle;margin-right:8px}
@@ -474,9 +500,26 @@
 
       <label class="lbl">风格</label>
       <select id="skillSel">
-        <option value="photo-abstract-editorial">加载中…</option>
+        <option value="photo-abstract-editorial">象牙抽象编辑</option>
       </select>
       <div class="hint">选择左侧图片的生成风格（6 个已安装 Codex skill 之一）。</div>
+
+      <label class="lbl">明信片字体</label>
+      <div class="font-grid">
+        <div class="font-cell">
+          <span class="sub-lbl">中文 · 话</span>
+          <select id="fontCn"></select>
+        </div>
+        <div class="font-cell">
+          <span class="sub-lbl">英文 · 话</span>
+          <select id="fontEn"></select>
+        </div>
+        <div class="font-cell">
+          <span class="sub-lbl">日期</span>
+          <select id="fontDate"></select>
+        </div>
+      </div>
+      <div class="hint">中文字体应用于中文，英文字体应用于英文和数字；日期字体单独可选。选择会自动保存。</div>
 
       <div class="actions">
         <button class="gen" id="genBtn">生成明信片</button>
@@ -641,9 +684,69 @@ let lastGenerated = null; // { image, sentence }
 const skillSel = $('skillSel');
 let currentSkillName = '象牙抽象编辑';
 
+/* ============ 明信片字体选择 ============ */
+// 字体清单（value 即 CSS font-family 名称；显示文本用对应字体预览）
+const FONT_CN_LIST = [
+  { v: '"LXGW WenKai GB Screen R", "Microsoft YaHei", sans-serif', label: '霞鹜文楷' },
+  { v: '"Microsoft YaHei", sans-serif', label: '微软雅黑' },
+  { v: 'SimSun, serif', label: '宋体' },
+  { v: 'KaiTi, "STKaiti", serif', label: '楷体' },
+  { v: 'SimHei, sans-serif', label: '黑体' },
+  { v: '"STKaiti", "KaiTi", serif', label: '华文楷体' },
+  { v: '"STSong", "SimSun", serif', label: '华文宋体' },
+];
+const FONT_EN_LIST = [
+  { v: '"Playfair Display", Georgia, serif', label: 'Playfair Display' },
+  { v: '"Great Vibes", cursive', label: 'Great Vibes' },
+  { v: '"Pacifico", cursive', label: 'Pacifico' },
+  { v: '"Bebas Neue", sans-serif', label: 'Bebas Neue' },
+  { v: '"Lobster", cursive', label: 'Lobster' },
+  { v: '"Dancing Script", cursive', label: 'Dancing Script' },
+  { v: 'Georgia, "Times New Roman", serif', label: 'Georgia' },
+];
+const FONT_DATE_LIST = FONT_EN_LIST.concat(FONT_CN_LIST.slice(0, 3));
+const LS_FONT_CN = 'pc_font_cn', LS_FONT_EN = 'pc_font_en', LS_FONT_DATE = 'pc_font_date';
+let fontCn = localStorage.getItem(LS_FONT_CN) || FONT_CN_LIST[0].v;
+let fontEn = localStorage.getItem(LS_FONT_EN) || FONT_EN_LIST[0].v;
+let fontDate = localStorage.getItem(LS_FONT_DATE) || FONT_EN_LIST[0].v;
+
+function fillFontSelect(selEl, list, currentVal){
+  selEl.innerHTML = '';
+  list.forEach(f => {
+    const opt = document.createElement('option');
+    opt.value = f.v; opt.textContent = f.label;
+    // 用对应字体渲染下拉项（预览效果）
+    opt.style.fontFamily = f.v;
+    if (f.v === currentVal) opt.selected = true;
+    selEl.appendChild(opt);
+  });
+}
+function applyFonts(){
+  const root = document.documentElement.style;
+  root.setProperty('--quote-cn-font', fontCn);
+  root.setProperty('--quote-en-font', fontEn);
+  root.setProperty('--date-font', fontDate);
+}
+fillFontSelect($('fontCn'), FONT_CN_LIST, fontCn);
+fillFontSelect($('fontEn'), FONT_EN_LIST, fontEn);
+fillFontSelect($('fontDate'), FONT_DATE_LIST, fontDate);
+applyFonts();
+$('fontCn').addEventListener('change', e => { fontCn = e.target.value; localStorage.setItem(LS_FONT_CN, fontCn); applyFonts(); });
+$('fontEn').addEventListener('change', e => { fontEn = e.target.value; localStorage.setItem(LS_FONT_EN, fontEn); applyFonts(); });
+$('fontDate').addEventListener('change', e => { fontDate = e.target.value; localStorage.setItem(LS_FONT_DATE, fontDate); applyFonts(); });
+
 // 页面加载时拉取 skill 列表填充下拉框
-fetch('/api/skills').then(r => r.json()).then(list => {
-  if (!Array.isArray(list) || !list.length) return;
+// 兜底列表（/api/skills 失败时使用，与服务器端默认保持一致）
+const SKILL_FALLBACK = [
+  { id: 'photo-abstract-editorial',   name: '象牙抽象编辑' },
+  { id: 'scenes-gathered-zine-v1-3',  name: '实景拼贴 Zine' },
+  { id: 'scene-distillation-zine-v1-3', name: '影像蒸馏 Zine' },
+  { id: 'gc-minimal-zine-poster',     name: '极简 Zine 海报' },
+  { id: 'heytea-style',               name: '喜茶风格' },
+  { id: 'ian-xiaohei-illustrations',  name: '小黑怪诞配图' },
+];
+function fillSkillSel(list){
+  if (!Array.isArray(list) || !list.length) return false;
   skillSel.innerHTML = '';
   list.forEach(s => {
     const opt = document.createElement('option');
@@ -652,7 +755,41 @@ fetch('/api/skills').then(r => r.json()).then(list => {
     skillSel.appendChild(opt);
   });
   currentSkillName = list[0].name;
-}).catch(() => { /* 保持默认选项 */ });
+  return true;
+}
+async function loadSkillsWithRetry(maxAttempts=2){
+  for (let i=1;i<=maxAttempts;i++){
+    try{
+      const r = await fetch('/api/skills?_=' + Date.now());
+      if (!r.ok) throw new Error('HTTP '+r.status);
+      const list = await r.json();
+      if (fillSkillSel(list)) {
+        // 加载成功后，把"风格"行下方的失败提示清除
+        const tag = document.getElementById('__skillRetryHint');
+        if (tag) tag.remove();
+        return true;
+      }
+    }catch(e){
+      console.warn('[skills] 第'+i+'次加载失败:', e.message);
+    }
+    if (i < maxAttempts) await new Promise(r=>setTimeout(r, 800));
+  }
+  // 全部失败：使用兜底列表并显示重试提示
+  fillSkillSel(SKILL_FALLBACK);
+  // 在 hint 下方追加一个可点击的重试提示
+  const hintEl = skillSel.parentElement.querySelector('.hint');
+  if (hintEl && !document.getElementById('__skillRetryHint')){
+    const tip = document.createElement('div');
+    tip.id = '__skillRetryHint';
+    tip.style.cssText = 'color:#e65100;font-size:12px;margin-top:4px';
+    tip.innerHTML = '⚠ 风格列表接口暂不可用，已使用内置默认。<a href="javascript:void(0)" style="text-decoration:underline">点此重试</a>';
+    tip.querySelector('a').onclick = () => { tip.innerHTML='重试中…'; loadSkillsWithRetry(2); };
+    hintEl.parentElement.insertBefore(tip, hintEl.nextSibling);
+    toast('风格列表加载失败，已切换到内置默认。可点击下方链接重试。','warn');
+  }
+  return false;
+}
+loadSkillsWithRetry(2);
 skillSel.addEventListener('change', () => {
   const opt = skillSel.options[skillSel.selectedIndex];
   currentSkillName = opt ? opt.textContent : skillSel.value;
@@ -742,9 +879,44 @@ async function generate(){
   if(!currentDataUrl){ alert('请先放入一张照片'); return; }
   genBtn.disabled = true;
   result.classList.remove('show');
-  statusEl.innerHTML = '<span class="spinner"></span>正在用「' + currentSkillName + '」生成… ①/3 发送请求…';
   const t0 = Date.now();
+  const isQuality = currentMode === 'quality';
+  // 模式对应的预估耗时区间
+  const estRange = isQuality ? '30–60 秒' : '15–30 秒';
+  // 分阶段提示文案（按已等待秒数触发），让用户感知"还活着"
+  const tipSchedule = [
+    { at: 0,    msg: '已发送请求，AI 正在分析你的照片…' },
+    { at: 8,    msg: isQuality ? '高质量图像生成中（分辨率较大，耐心等待）…' : '正在绘制抽象风格图像…' },
+    { at: 20,   msg: '继续生成中，同时在为你构思一句哲理文案…' },
+    { at: 40,   msg: '处理较久，后台正在自动重试（无需操作），请再等一下…' },
+    { at: 70,   msg: '仍在努力，上游偶尔拥堵属正常现象，你可以去倒杯水…' },
+    { at: 120,  msg: '超过 2 分钟了，若太久可点中断按钮换快速模式再试' },
+  ];
+  let currentTipIdx = -1;
+  // 在函数作用域声明，确保 setInterval / abort 回调都能访问
+  let controller = new AbortController();
+  let tickTimer = null;
+  // ---- 启动实时计时器（每秒刷新）----
+  tickTimer = setInterval(() => {
+    const elapsed = Math.round((Date.now() - t0) / 1000);
+    // 按秒数推进提示
+    while (currentTipIdx + 1 < tipSchedule.length && elapsed >= tipSchedule[currentTipIdx + 1].at) {
+      currentTipIdx++;
+    }
+    const tip = tipSchedule[currentTipIdx] ? tipSchedule[currentTipIdx].msg : tipSchedule[tipSchedule.length-1].msg;
+    statusEl.innerHTML =
+      '<span class="spinner"></span>' +
+      '用「' + currentSkillName + '」生成中… 已等 ' + elapsed + 's （预估 ' + estRange + '）' +
+      '<br><span style="opacity:0.75;font-size:12px">' + tip + '</span>' +
+      '&nbsp;&nbsp;<a href="javascript:void(0)" id="__abortBtn" style="color:#ff7043;text-decoration:underline;font-size:12px">中断</a>';
+    const ab = document.getElementById('__abortBtn');
+    if (ab) ab.onclick = () => controller.abort(new Error('你已手动中断生成'));
+  }, 1000);
+  // ---- 立即渲染一次（避免等 1s 才出现）----
+  statusEl.innerHTML = '<span class="spinner"></span>用「' + currentSkillName + '」生成中… 已等 0s （预估 ' + estRange + '）<br><span style="opacity:0.75;font-size:12px">'+tipSchedule[0].msg+'</span>';
   try{
+    // 服务器端会自动重试 3 次（指数退避 3s/6s），最坏情况需等待较久
+    const timeoutId = setTimeout(() => controller.abort(new Error('请求超时（超过 7 分钟未响应），建议稍后重试或切换为快速模式')), 420000);
     const resp = await fetch('/api/generate', {
       method:'POST',
       headers:{'Content-Type':'application/json'},
@@ -753,30 +925,34 @@ async function generate(){
         text: $('text').value,
         mode: currentMode,
         skill: skillSel.value,
-      })
+      }),
+      signal: controller.signal,
     });
-    statusEl.innerHTML = '<span class="spinner"></span>「' + currentSkillName + '」②/3 正在生成图片（最耗时，约 10–40 秒）…';
+    clearTimeout(timeoutId);
     const data = await resp.json();
     if(!resp.ok || data.error){ throw new Error(data.error || ('HTTP '+resp.status)); }
 
-    statusEl.innerHTML = '<span class="spinner"></span>③/3 生成哲理文案…';
-    await new Promise(r => setTimeout(r, 250));
+    clearInterval(tickTimer);
+    statusEl.innerHTML = '<span class="spinner"></span>正在装配明信片画面…';
+    await new Promise(r => setTimeout(r, 200));
 
     $('resultImg').src = data.image;
     $('resultText').textContent = data.sentence || '（无文案）';
     const now = new Date();
     const secs = Math.round((Date.now() - t0)/1000);
-    const modeLabel = currentMode === 'fast' ? '快速模式' : '高质量模式';
-    $('meta').textContent = `${modeLabel} · 耗时 ${secs}s · ${now.getFullYear()}.${String(now.getMonth()+1).padStart(2,'0')}.${String(now.getDate()).padStart(2,'0')}`;
+    $('meta').textContent = `${now.getFullYear()}.${String(now.getMonth()+1).padStart(2,'0')}.${String(now.getDate()).padStart(2,'0')}`;
     result.classList.add('show');
     statusEl.textContent = `✅ 完成 · 共 ${secs}s`;
 
     lastGenerated = { image: data.image, sentence: data.sentence || '' };
     result.scrollIntoView({behavior:'smooth', block:'nearest'});
   }catch(err){
-    statusEl.textContent = '生成失败：' + err.message;
+    clearInterval(tickTimer);
+    const elapsed = Math.round((Date.now() - t0)/1000);
+    statusEl.textContent = '❌ 生成失败（等了 ' + elapsed + 's）：' + err.message;
     toast('生成失败：' + err.message, 'err');
   }finally{
+    clearInterval(tickTimer);
     genBtn.disabled = false;
   }
 }
@@ -789,10 +965,22 @@ $('copyBtn').addEventListener('click', async ()=>{
   catch(e){ alert('复制失败，请手动选择'); }
 });
 
-$('saveBtn').addEventListener('click', ()=>{
+$('saveBtn').addEventListener('click', async ()=>{
   const img = $('resultImg');
   if(!img.src){ alert('还没有图片'); return; }
   const sentence = $('resultText').textContent;
+  // 预加载所选字体，确保 canvas 能正确渲染
+  try{
+    await Promise.all([
+      document.fonts.load('30px ' + fontEn),
+      document.fonts.load('30px ' + fontCn),
+      document.fonts.load('15px ' + fontDate),
+      document.fonts.load('70px ' + fontEn),
+    ]);
+    await document.fonts.ready;
+  }catch(e){ /* 字体加载失败时退回系统字体，继续渲染 */ }
+  const quoteFontStack = fontEn + ', ' + fontCn + ', Georgia, serif';
+  const dateFontStack = fontDate + ', Georgia, serif';
   const canvas = document.createElement('canvas');
   const W = 1400, H = 900;
   canvas.width = W; canvas.height = H;
@@ -815,14 +1003,14 @@ $('saveBtn').addEventListener('click', ()=>{
     ctx.textAlign='left';
 
     ctx.fillStyle = '#7A5A3A';
-    ctx.font = '70px Georgia, serif';
+    ctx.font = '70px ' + quoteFontStack;
     ctx.fillText('"', tx, 200);
     ctx.fillStyle = '#2B2A28';
-    ctx.font = '30px Georgia, serif';
+    ctx.font = '30px ' + quoteFontStack;
     wrapText(ctx, sentence, tx+40, 170, W-tx-50-20, 44);
     ctx.strokeStyle='#E3DED3'; ctx.lineWidth=1;
     ctx.beginPath(); ctx.moveTo(tx+40, H-110); ctx.lineTo(tx+40+80, H-110); ctx.stroke();
-    ctx.fillStyle='#5A554E'; ctx.font='15px Georgia, serif';
+    ctx.fillStyle='#5A554E'; ctx.font='15px ' + dateFontStack;
     ctx.fillText($('meta').textContent, tx+40, H-78);
 
     const link = document.createElement('a');

@@ -136,7 +136,9 @@ for (const s of SKILLS) {
 }
 
 // ---------- 工具：发起 HTTPS 请求，返回 { statusCode, body } ----------
-function httpsRequest(method, urlStr, headers, bodyBuffer) {
+// timeoutMs 可传，图像生成允许更长超时（默认 120s），文本生成 60s
+function httpsRequest(method, urlStr, headers, bodyBuffer, timeoutMs) {
+  const t = timeoutMs || 120000;
   return new Promise((resolve, reject) => {
     const u = new URL(urlStr);
     const options = {
@@ -144,7 +146,7 @@ function httpsRequest(method, urlStr, headers, bodyBuffer) {
       hostname: u.hostname,
       path: u.pathname + u.search,
       headers: headers || {},
-      timeout: 180000, // 3 分钟，图像生成可能较慢
+      timeout: t,
     };
     const req = https.request(options, (res) => {
       const chunks = [];
@@ -155,10 +157,34 @@ function httpsRequest(method, urlStr, headers, bodyBuffer) {
       });
     });
     req.on('error', reject);
-    req.setTimeout(180000, () => req.destroy(new Error('请求超时（180s）')));
+    req.setTimeout(t, () => req.destroy(new Error('请求超时（' + Math.round(t/1000) + 's）——上游 API 无响应，请稍后重试')));
     if (bodyBuffer) req.write(bodyBuffer);
     req.end();
   });
+}
+
+// ---------- 工具：带指数退避的重试包装器 ----------
+// fn: 异步函数；maxAttempts: 最大尝试次数；baseDelayMs: 初始等待；label: 日志标签
+async function withRetry(fn, maxAttempts, baseDelayMs, label) {
+  let lastErr = null;
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    try {
+      const result = await fn();
+      if (attempt > 1) console.log('[retry] ' + label + ' 第' + attempt + '次尝试 ✓ 成功');
+      return result;
+    } catch (e) {
+      lastErr = e;
+      const msg = e.message || String(e);
+      console.error('[retry] ' + label + ' 第' + attempt + '/' + maxAttempts + '次失败: ' + msg.slice(0, 200));
+      if (attempt < maxAttempts) {
+        // 指数退避 + 随机抖动: 第1次等待 baseDelayMs, 第2次 2*baseDelayMs ±20%
+        const delay = Math.round(baseDelayMs * Math.pow(2, attempt - 1) * (0.8 + Math.random() * 0.4));
+        console.log('[retry] ' + label + ' ' + Math.round(delay/1000) + ' 秒后自动重试…');
+        await new Promise(r => setTimeout(r, delay));
+      }
+    }
+  }
+  throw lastErr;
 }
 
 // ---------- 工具：构建 multipart/form-data 请求体 ----------
@@ -216,20 +242,32 @@ async function generateEditorialImage(imageBuffer, mime, ext, userText, size, sk
   };
   const { body, contentType } = buildMultipart(fields, file);
 
+  // 图像生成本身较慢，使用 120s 超时
   const res = await httpsRequest('POST', config.baseUrl + '/images/edits', {
     Authorization: 'Bearer ' + config.apiKey,
     'Content-Type': contentType,
-  }, body);
+  }, body, 120000);
 
   if (res.statusCode !== 200) {
-    throw new Error('图像生成失败 (HTTP ' + res.statusCode + '): ' + res.body.toString('utf8').slice(0, 500));
+    const errBody = res.body.toString('utf8').slice(0, 500);
+    // 尝试识别常见错误类型，给用户更友好的提示
+    let hint = '';
+    if (res.statusCode === 429) hint = '（请求过于频繁，上游限流）';
+    else if (res.statusCode === 401 || res.statusCode === 403) hint = '（API Key 无效或无权限）';
+    else if (res.statusCode >= 500) hint = '（上游服务器内部错误，通常稍后重试即可恢复）';
+    throw new Error('【抽象图生成失败】' + hint + ' HTTP ' + res.statusCode + ': ' + errBody);
   }
-  const json = JSON.parse(res.body.toString('utf8'));
+  let json;
+  try {
+    json = JSON.parse(res.body.toString('utf8'));
+  } catch (e) {
+    throw new Error('【抽象图生成失败】上游返回非 JSON 数据');
+  }
   const item = json.data && json.data[0];
-  if (!item) throw new Error('图像生成返回为空');
+  if (!item) throw new Error('【抽象图生成失败】上游返回 data 为空');
   if (item.b64_json) return 'data:image/png;base64,' + item.b64_json;
   if (item.url) return item.url;
-  throw new Error('图像生成返回格式无法识别');
+  throw new Error('【抽象图生成失败】返回格式无法识别');
 }
 
 // ---------- 调用多模态文本 API：结合照片与用户文字，生成一句哲理话 ----------
@@ -261,16 +299,28 @@ async function generateSentence(imageDataUrl, userText) {
     temperature: 0.8,
   });
 
+  // 文本生成较快，使用 60s 超时
   const res = await httpsRequest('POST', config.baseUrl + '/chat/completions', {
     Authorization: 'Bearer ' + config.apiKey,
     'Content-Type': 'application/json',
-  }, Buffer.from(body, 'utf8'));
+  }, Buffer.from(body, 'utf8'), 60000);
 
   if (res.statusCode !== 200) {
-    throw new Error('文案生成失败 (HTTP ' + res.statusCode + '): ' + res.body.toString('utf8').slice(0, 500));
+    const errBody = res.body.toString('utf8').slice(0, 500);
+    let hint = '';
+    if (res.statusCode === 429) hint = '（请求过于频繁，上游限流）';
+    else if (res.statusCode === 401 || res.statusCode === 403) hint = '（API Key 无效或无权限）';
+    else if (res.statusCode >= 500) hint = '（上游服务器内部错误，通常稍后重试即可恢复）';
+    throw new Error('【哲理文案生成失败】' + hint + ' HTTP ' + res.statusCode + ': ' + errBody);
   }
-  const json = JSON.parse(res.body.toString('utf8'));
+  let json;
+  try {
+    json = JSON.parse(res.body.toString('utf8'));
+  } catch (e) {
+    throw new Error('【哲理文案生成失败】上游返回非 JSON 数据');
+  }
   const text = (json.choices && json.choices[0] && json.choices[0].message && json.choices[0].message.content) || '';
+  if (!text.trim()) throw new Error('【哲理文案生成失败】上游返回文本为空');
   return text.trim().replace(/^[""''『「]+|[""''』」]+$/g, '');
 }
 
@@ -286,6 +336,10 @@ const MIME = {
   '.svg': 'image/svg+xml',
   '.ico': 'image/x-icon',
   '.json': 'application/json; charset=utf-8',
+  '.ttf': 'font/ttf',
+  '.otf': 'font/otf',
+  '.woff': 'font/woff',
+  '.woff2': 'font/woff2',
 };
 
 function serveStaticDir(dir, req, res) {
@@ -461,7 +515,7 @@ function handleCommunityAPI(req, res) {
     const comments = db.comments
       .filter(c => c.postId === postId)
       .sort((a, b) => a.createdAt - b.createdAt);
-    return jsonOK(res, { comments });
+    return jsonOK(res, { comments }) || true;
   }
 
   // POST /api/community/posts/:id/comments —— 发表评论
@@ -507,11 +561,13 @@ const server = http.createServer(async (req, res) => {
   if (req.method === 'OPTIONS') { res.writeHead(204); res.end(); return; }
 
   const url = req.url.split('?')[0];
+  console.log('[req]', req.method, url);
 
   // ----- 社区 API -----
   if (url.startsWith('/api/community/')) {
-    const handled = handleCommunityAPI(req, res);
-    if (handled) return;
+    // 用 headersSent 判断：只要社区 handler 已发响应头即结束，避免下落到 serveStatic 触发 ERR_HTTP_HEADERS_SENT
+    handleCommunityAPI(req, res);
+    if (res.headersSent) return;
   }
 
   // 生成接口
@@ -551,29 +607,23 @@ const server = http.createServer(async (req, res) => {
       const imageBuffer = Buffer.from(m[2], 'base64');
       const ext = mime.split('/')[1] || 'jpg';
 
-      // 两路并行：左图 + 右句（带自动重试，缓解上游间歇性报错）
+      // 两路并行：左图 + 右句；各自独立自动重试，缓解上游间歇性报错
+      // 图像：max 3 次尝试，首次等待 3s（指数退避后第二次 6s）
+      // 文案：max 3 次尝试，首次等待 3s
       const MAX_ATTEMPTS = 3;
-      let lastErr = null;
-      let imageUrl = null, sentence = null;
-      for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
-        try {
-          [imageUrl, sentence] = await Promise.all([
-            generateEditorialImage(imageBuffer, mime, ext, userText, imageSize, skillId),
-            generateSentence(dataUrl, userText),
-          ]);
-          if (attempt > 1) console.log('[generate] 第' + attempt + '次尝试成功');
-          lastErr = null;
-          break;
-        } catch (e) {
-          lastErr = e;
-          console.error('[generate] 第' + attempt + '次失败:', e.message);
-          if (attempt < MAX_ATTEMPTS) {
-            console.log('[generate] 3秒后自动重试…');
-            await new Promise(r => setTimeout(r, 3000));
-          }
-        }
-      }
-      if (lastErr) throw lastErr;
+      const BASE_DELAY_MS = 3000;
+      const t0 = Date.now();
+      const [imageUrl, sentence] = await Promise.all([
+        withRetry(
+          () => generateEditorialImage(imageBuffer, mime, ext, userText, imageSize, skillId),
+          MAX_ATTEMPTS, BASE_DELAY_MS, '图像生成'
+        ),
+        withRetry(
+          () => generateSentence(dataUrl, userText),
+          MAX_ATTEMPTS, BASE_DELAY_MS, '文案生成'
+        ),
+      ]);
+      console.log('[generate] 全部完成，总耗时 ' + Math.round((Date.now() - t0)/1000) + 's');
 
       res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
       res.end(JSON.stringify({ image: imageUrl, sentence }));
@@ -623,7 +673,11 @@ const server = http.createServer(async (req, res) => {
     return;
   }
 
-  // 静态资源
+  // 静态资源（防崩：若某 handler 已发 headers 却未 return，这里跳过避免 ERR_HTTP_HEADERS_SENT）
+  if (res.headersSent) {
+    console.error('[fallthrough] headers already sent for', req.method, url, '— skip serveStatic');
+    return;
+  }
   serveStatic(req, res);
 });
 
@@ -641,6 +695,29 @@ server.listen(PORT, '127.0.0.1', () => {
   });
   const db = loadDB();
   console.log('  社区数据：帖子 ' + db.posts.length + ' · 评论 ' + db.comments.length);
-  console.log('================================================');
+  console.log('  上游 API： ' + config.baseUrl);
+  console.log('------------------------------------------------');
+  console.log('  正在检测上游 API 连通性…');
+  // 异步检测，不阻塞服务启动
+  (async () => {
+    try {
+      const t0 = Date.now();
+      const res = await httpsRequest('GET', config.baseUrl + '/models', {
+        Authorization: 'Bearer ' + config.apiKey,
+      }, null, 10000);
+      const dt = Math.round(Date.now() - t0);
+      if (res.statusCode === 200) {
+        console.log('  ✓ 上游 API 可达 (HTTP 200, 延迟 ' + dt + 'ms) —— 可以正常生成');
+      } else {
+        console.warn('  ⚠ 上游 API 返回异常 HTTP ' + res.statusCode + ' —— 生成可能失败，服务仍会自动重试 3 次');
+        console.warn('    响应片段: ' + res.body.toString('utf8').slice(0, 120));
+      }
+    } catch (e) {
+      console.warn('  ⚠ 上游 API 当前不可达: ' + (e.message || String(e)).slice(0, 120));
+      console.warn('    （间歇性故障属正常现象，生成时服务会自动重试 3 次，间隔 3s/6s 指数退避）');
+      console.warn('    若持续失败，请检查网络或稍后再试');
+    }
+    console.log('================================================');
+  })();
   exec('start "" ' + url, () => {});
 });
