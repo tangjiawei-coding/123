@@ -1,0 +1,30 @@
+# ===== 运行时与输出 =====
+# 生成的明信片/海报等结果图
+postcard-*.png
+
+# 运行时数据（类似社区帖子、用户上传等）
+postcard-studio/data/
+
+# 临时 skill 压缩包与解压目录
+_skill-tmp/
+
+# ===== 日志 =====
+*.log
+npm-debug.log*
+server.log
+
+# ===== 依赖（当前项目零依赖，保留占位） =====
+node_modules/
+
+# ===== 编辑器 / 系统 =====
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# ===== 临时文件 =====
+*.tmp
+*.bak
+*.swp
+*~

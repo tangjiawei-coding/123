@@ -1,0 +1,9 @@
+{
+  "apiKey": "sk-ba9dabe2af7db40011040e3ed329ea8c846250ae03a5e488cd2198e3b2cb9e5c",
+  "baseUrl": "https://ai.novacode.top/v1",
+  "imageModel": "gpt-image-2",
+  "textModel": "gpt-5.4",
+  "imageSize": "1024x1024",
+  "imageSizeFast": "768x768",
+  "port": 5123
+}
