@@ -7,9 +7,11 @@ import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.graphics.Canvas
 import android.graphics.Color
+import android.graphics.Matrix
 import android.graphics.Paint
 import android.graphics.Rect
 import android.graphics.Typeface
+import android.media.ExifInterface
 import android.net.Uri
 import android.os.Build
 import android.provider.MediaStore
@@ -26,6 +28,12 @@ data class PreparedImage(val preview: Bitmap, val dataUrl: String)
 
 object ImageUtils {
     fun prepareUpload(resolver: ContentResolver, uri: Uri, maxEdge: Int = 1024): PreparedImage {
+        val orientation = runCatching {
+            resolver.openInputStream(uri).use { input ->
+                requireNotNull(input)
+                ExifInterface(input).getAttributeInt(ExifInterface.TAG_ORIENTATION, ExifInterface.ORIENTATION_NORMAL)
+            }
+        }.getOrDefault(ExifInterface.ORIENTATION_NORMAL)
         val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
         resolver.openInputStream(uri).use { BitmapFactory.decodeStream(it, null, bounds) }
         var sample = 1
@@ -33,11 +41,21 @@ object ImageUtils {
         val decoded = resolver.openInputStream(uri).use {
             BitmapFactory.decodeStream(it, null, BitmapFactory.Options().apply { inSampleSize = sample })
         } ?: error("无法读取图片")
-        val scale = minOf(1f, maxEdge.toFloat() / max(decoded.width, decoded.height))
-        val resized = if (scale < 1f) {
-            Bitmap.createScaledBitmap(decoded, (decoded.width * scale).toInt(), (decoded.height * scale).toInt(), true)
+        val rotation = when (orientation) {
+            ExifInterface.ORIENTATION_ROTATE_90 -> 90f
+            ExifInterface.ORIENTATION_ROTATE_180 -> 180f
+            ExifInterface.ORIENTATION_ROTATE_270 -> 270f
+            else -> 0f
+        }
+        val oriented = if (rotation != 0f) {
+            Bitmap.createBitmap(decoded, 0, 0, decoded.width, decoded.height, Matrix().apply { postRotate(rotation) }, true)
                 .also { if (it !== decoded) decoded.recycle() }
         } else decoded
+        val scale = minOf(1f, maxEdge.toFloat() / max(oriented.width, oriented.height))
+        val resized = if (scale < 1f) {
+            Bitmap.createScaledBitmap(oriented, (oriented.width * scale).toInt(), (oriented.height * scale).toInt(), true)
+                .also { if (it !== oriented) oriented.recycle() }
+        } else oriented
         val bytes = ByteArrayOutputStream().use {
             resized.compress(Bitmap.CompressFormat.JPEG, 88, it)
             it.toByteArray()
