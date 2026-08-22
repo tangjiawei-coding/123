@@ -28,3 +28,10 @@ Desktop.ini
 *.bak
 *.swp
 *~
+
+# ===== Android =====
+.gradle/
+**/build/
+local.properties
+*.jks
+*.keystore
