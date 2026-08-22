@@ -33,13 +33,18 @@
   body{
     font-family:-apple-system,"Segoe UI","Microsoft YaHei",sans-serif;
     background:
-      linear-gradient(180deg, rgba(237,231,218,0.82) 0%, rgba(229,222,207,0.88) 100%),
-      url('https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=Soft%20watercolor%20manga%20healing%20illustration%20background%2C%20warm%20pastel%20cream%20and%20beige%20tones%2C%20gentle%20fluffy%20clouds%2C%20tiny%20cozy%20cottage%20with%20flower%20garden%2C%20soft%20morning%20sunlight%2C%20dreamy%20peaceful%20atmosphere%2C%20cute%20minimal%20details%2C%20light%20and%20airy%2C%20suitable%20as%20website%20background&image_size=landscape_16_9') center/cover no-repeat fixed,
+      linear-gradient(180deg, rgba(237,231,218,0.15) 0%, rgba(229,222,207,0.22) 100%),
       linear-gradient(180deg,#EDE7DA 0%,#E5DECF 100%);
     background-color:#EDE7DA;
     color:var(--ink);
     min-height:100vh;
     padding:24px 16px 64px;
+  }
+  body.has-bg{
+    background:
+      linear-gradient(180deg, rgba(237,231,218,0.15) 0%, rgba(229,222,207,0.22) 100%),
+      var(--bg-image) center/cover no-repeat fixed;
+    background-color:#EDE7DA;
   }
   .wrap{max-width:1080px;margin:0 auto}
   header{text-align:center;margin-bottom:20px}
@@ -129,6 +134,58 @@
   select:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
   .hint{font-size:12px;color:#9A938A;margin-top:6px}
 
+  /* 风格自定义下拉（功能11）——原生 select 被隐藏，仅镜像 .value */
+  .skill-picker{position:relative;max-width:420px}
+  .skill-picker > select{display:none}
+  .sp-current{
+    display:flex;align-items:center;gap:14px;
+    border:1px solid var(--line);border-radius:10px;padding:10px 14px;
+    background:#fff;cursor:pointer;transition:.2s;
+  }
+  .sp-current:hover{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
+  .sp-current .sp-thumb{
+    width:48px;height:48px;border-radius:8px;flex:0 0 48px;
+    display:flex;align-items:center;justify-content:center;
+    font-size:24px;border:1px solid var(--line);position:relative;overflow:hidden;
+  }
+  .sp-current .sp-thumb::after{
+    content:'';position:absolute;inset:0;background:linear-gradient(135deg,transparent 60%,var(--sp-accent,#7A5A3A) 60%);
+    opacity:.25;
+  }
+  .sp-current .sp-meta{flex:1;min-width:0}
+  .sp-current .sp-meta .sp-name{font-size:15px;font-weight:700;color:var(--ink)}
+  .sp-current .sp-meta .sp-desc{font-size:12px;color:var(--ink-soft);margin-top:2px}
+  .sp-current .sp-caret{font-size:12px;color:var(--ink-soft);transition:transform .2s}
+  .skill-picker.open .sp-caret{transform:rotate(180deg)}
+  .sp-list{
+    position:absolute;top:calc(100% + 6px);left:0;right:0;z-index:50;
+    background:var(--paper);border:1px solid var(--line);border-radius:12px;
+    box-shadow:0 14px 40px rgba(60,50,30,.16);overflow:hidden;
+    max-height:380px;overflow-y:auto;display:none;
+  }
+  .skill-picker.open .sp-list{display:block;animation:fadeIn .15s ease}
+  .sp-item{
+    display:flex;align-items:center;gap:12px;padding:10px 14px;cursor:pointer;transition:.15s;
+    border-bottom:1px solid var(--line);
+  }
+  .sp-item:last-child{border-bottom:none}
+  .sp-item:hover{background:#FBF6EA}
+  .sp-item.active{background:#FBF6EA;color:var(--accent)}
+  .sp-item .sp-thumb{
+    width:40px;height:40px;border-radius:6px;flex:0 0 40px;
+    display:flex;align-items:center;justify-content:center;
+    font-size:20px;border:1px solid var(--line);position:relative;overflow:hidden;
+  }
+  .sp-item .sp-thumb::after{
+    content:'';position:absolute;inset:0;background:linear-gradient(135deg,transparent 60%,var(--sp-accent,#7A5A3A) 60%);
+    opacity:.25;
+  }
+  .sp-item .sp-meta{flex:1;min-width:0}
+  .sp-item .sp-meta .sp-name{font-size:14px;font-weight:600;color:var(--ink)}
+  .sp-item .sp-meta .sp-desc{font-size:11px;color:var(--ink-soft);margin-top:1px}
+  .sp-item .sp-check{font-size:14px;color:var(--accent);opacity:0}
+  .sp-item.active .sp-check{opacity:1}
+
   /* 字体选择网格 */
   .font-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:6px}
   .font-cell{display:flex;flex-direction:column;gap:4px}
@@ -175,6 +232,19 @@
   .cardbar button.primary{background:var(--accent);color:#fff;border-color:var(--accent)}
   .cardbar button.primary:hover{background:#6b4f33;color:#fff}
 
+  /* ---- 3D 翻转容器 ---- */
+  .postcard-wrap{
+    perspective:1600px;
+    cursor:pointer;
+    position:relative;
+  }
+  .postcard-wrap .flip-hint{
+    position:absolute;bottom:-28px;left:50%;transform:translateX(-50%);
+    font-size:12px;color:var(--ink-soft);opacity:0;transition:opacity .3s;
+    pointer-events:none;white-space:nowrap;
+  }
+  .postcard-wrap:hover .flip-hint{opacity:.7}
+  .postcard-wrap.flipped .flip-hint{opacity:0}
   .postcard{
     display:flex;
     background:var(--ivory);
@@ -183,6 +253,26 @@
     overflow:hidden;
     box-shadow:0 14px 40px rgba(60,50,30,.16);
     min-height:380px;
+    transform-style:preserve-3d;
+    transition:transform .7s cubic-bezier(.4,.2,.2,1);
+  }
+  .postcard-wrap.flipped .postcard{transform:rotateY(180deg)}
+  .postcard .pc-face{
+    flex:1;display:flex;
+    backface-visibility:hidden;-webkit-backface-visibility:hidden;
+  }
+  .postcard .pc-front{transform:rotateY(0deg)}
+  .postcard .pc-back{
+    position:absolute;top:0;left:0;width:100%;height:100%;
+    transform:rotateY(180deg);
+    background:#000;
+  }
+  .postcard .pc-back img{width:100%;height:100%;object-fit:contain;display:block}
+  .postcard .pc-back .back-label{
+    position:absolute;bottom:14px;left:50%;transform:translateX(-50%);
+    background:rgba(0,0,0,.55);color:#fff;font-size:12px;
+    padding:4px 14px;border-radius:20px;letter-spacing:.05em;
+    pointer-events:none;
   }
   .postcard .pc-img{
     flex:0 0 52%;
@@ -201,7 +291,7 @@
     color:var(--accent);font-family:Georgia,serif;font-size:10px;text-align:center;line-height:1.1;
     transform:rotate(-4deg);opacity:.7;
   }
-  .pc-text .quote{font-family:var(--quote-en-font),var(--quote-cn-font),Georgia,"Times New Roman",serif;font-size:25px;line-height:1.5;color:var(--ink);font-weight:400}
+  .pc-text .quote{font-family:var(--quote-en-font),var(--quote-cn-font),Georgia,"Times New Roman",serif;font-size:25px;line-height:1.5;color:var(--ink);font-weight:400;white-space:pre-line}
   .pc-text .quote::before{content:"“";font-size:40px;color:var(--accent);line-height:0;vertical-align:-10px;margin-right:4px}
   .pc-text .meta{margin-top:22px;font-size:12px;color:var(--ink-soft);letter-spacing:.04em;font-family:var(--date-font),Georgia,serif}
   .pc-text .divider{height:1px;background:var(--line);margin:20px 0;width:60px}
@@ -232,6 +322,48 @@
   .nick-row{display:flex;gap:8px;align-items:center}
   .nick-row label{font-size:13px;color:var(--ink-soft);font-weight:600}
   .nick-row input{width:140px;padding:8px 12px;font-size:13px;min-height:0;border-radius:8px}
+  .btn-post-new{
+    background:var(--ink);color:#fff;border:none;border-radius:10px;
+    padding:9px 16px;font-size:13px;font-weight:700;cursor:pointer;
+    display:flex;align-items:center;gap:6px;transition:.15s;
+  }
+  .btn-post-new:hover{background:#1a1a18;transform:translateY(-1px)}
+  .btn-post-new:active{transform:translateY(0)}
+
+  /* ============ 发帖弹窗 ============ */
+  .np-preview{
+    width:100%;
+    border:2px dashed var(--line);
+    border-radius:12px;
+    background:var(--bg);
+    min-height:200px;
+    display:flex;align-items:center;justify-content:center;
+    overflow:hidden;
+    position:relative;
+    margin-bottom:14px;
+  }
+  .np-preview.empty{cursor:pointer;transition:.15s}
+  .np-preview.empty:hover{border-color:var(--accent);background:#FFF9EE}
+  .np-preview .np-ph{
+    text-align:center;color:var(--ink-soft);
+    padding:24px;
+  }
+  .np-preview .np-ph .big{font-size:48px;margin-bottom:8px}
+  .np-preview .np-ph .t1{font-weight:700;color:var(--ink);font-size:15px;margin-bottom:4px}
+  .np-preview .np-ph .t2{font-size:12px}
+  .np-preview img{max-width:100%;max-height:360px;display:block}
+  .np-preview .np-del{
+    position:absolute;top:10px;right:10px;
+    background:rgba(0,0,0,.55);color:#fff;border:none;
+    width:32px;height:32px;border-radius:50%;
+    font-size:18px;cursor:pointer;line-height:1;
+    display:flex;align-items:center;justify-content:center;
+    transition:.15s;
+  }
+  .np-preview .np-del:hover{background:rgba(200,50,50,.85)}
+  .np-compress-info{
+    font-size:12px;color:var(--ink-soft);margin:-6px 0 14px;text-align:right;
+  }
 
   .post-grid{
     display:grid;
@@ -266,7 +398,7 @@
     font-family:Georgia,serif;font-size:14px;line-height:1.6;
     color:var(--ink-soft);font-style:italic;
     border-left:2px solid var(--accent-soft);
-    padding-left:10px;
+    padding-left:10px;white-space:pre-line;
     display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;
   }
   .post-card .pdesc{font-size:13px;color:var(--ink-soft);line-height:1.55;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
@@ -349,7 +481,7 @@
   .share-form .mini-preview .s-info{flex:1;min-width:0}
   .share-form .mini-preview .s-info .s-sentence{
     font-family:Georgia,serif;font-size:14px;line-height:1.55;color:var(--ink);
-    font-style:italic;
+    font-style:italic;white-space:pre-line;
   }
 
   /* 帖子详情 */
@@ -378,7 +510,7 @@
     font-family:Georgia,serif;font-size:18px;line-height:1.7;
     color:var(--ink);font-style:italic;
     padding:14px 18px;background:#FBF6EA;border-left:3px solid var(--accent);
-    border-radius:0 8px 8px 0;margin:8px 0;
+    border-radius:0 8px 8px 0;margin:8px 0;white-space:pre-line;
   }
   .detail-desc{font-size:14px;line-height:1.7;color:var(--ink-soft)}
   .detail-stats{
@@ -447,9 +579,195 @@
   .toast.err{background:#B04A3A}
   .toast.ok{background:#3F7A52}
   @keyframes toastIn{from{opacity:0;transform:translate(-50%,-10px)}to{opacity:1;transform:translate(-50%,0)}}
+
+  /* ============ 功能7：拆信封动画 ============ */
+  .envelope{
+    position:relative;width:340px;height:220px;margin:0 auto;
+    perspective:800px;
+  }
+  .env-back{
+    position:absolute;inset:0;
+    background:linear-gradient(135deg,#E8DCC6,#D4C4A0);
+    border-radius:8px;box-shadow:0 10px 30px rgba(60,50,30,.2);
+  }
+  .env-letter{
+    position:absolute;left:20px;right:20px;top:30px;bottom:30px;
+    background:#FBF9F4;border:1px solid var(--line);
+    border-radius:4px;padding:20px;
+    display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;
+    transition:transform .6s cubic-bezier(.4,.2,.2,1);
+    z-index:1;
+  }
+  .envelope.opened .env-letter{transform:translateY(-130px) scale(1.02)}
+  .env-front{
+    position:absolute;inset:0;
+    background:linear-gradient(135deg,#D4C4A0,#B8A37A);
+    clip-path:polygon(0 40%, 50% 100%, 100% 40%, 100% 100%, 0 100%);
+    z-index:2;
+  }
+  .env-flap{
+    position:absolute;left:0;right:0;top:0;height:50%;
+    background:linear-gradient(135deg,#E8DCC6,#C4B088);
+    clip-path:polygon(0 0, 100% 0, 50% 100%);
+    transform-origin:top;transition:transform .5s ease;z-index:3;
+    cursor:pointer;
+  }
+  .envelope.opened .env-flap{transform:rotateX(180deg) translateY(-2px)}
+  .env-seal{
+    position:absolute;left:50%;top:45%;transform:translate(-50%,-50%);
+    width:36px;height:36px;border-radius:50%;
+    background:radial-gradient(circle,#C0392B,#8B1A1A);
+    color:#fff;display:flex;align-items:center;justify-content:center;
+    font-size:16px;z-index:4;box-shadow:0 2px 6px rgba(0,0,0,.3);
+    cursor:pointer;
+  }
+  .env-card-display{margin-top:24px;text-align:center}
+  .env-card-display img{max-width:100%;border-radius:10px;border:1px solid var(--line);box-shadow:0 8px 24px rgba(60,50,30,.14)}
+  .env-meta{margin-top:14px;font-size:14px;color:var(--ink-soft);line-height:1.6}
+
+  /* ============ 功能8：社区筛选栏 ============ */
+  .com-filters{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px;align-items:center}
+  .com-filters .sort-group{display:flex;gap:4px;background:var(--paper);border:1px solid var(--line);border-radius:8px;padding:3px}
+  .com-filters .sort-btn{
+    padding:6px 12px;border:none;background:none;cursor:pointer;
+    font-size:13px;color:var(--ink-soft);border-radius:6px;transition:.15s;font-family:inherit;
+  }
+  .com-filters .sort-btn:hover{color:var(--ink)}
+  .com-filters .sort-btn.active{background:var(--ink);color:#fff}
+  .com-filters .tag-row{display:flex;gap:6px;flex-wrap:wrap}
+  .com-filters .tag-chip{
+    padding:4px 10px;background:var(--paper);border:1px solid var(--line);
+    border-radius:20px;font-size:12px;cursor:pointer;color:var(--ink-soft);
+    transition:.15s;
+  }
+  .com-filters .tag-chip:hover{border-color:var(--accent);color:var(--accent)}
+  .com-filters .tag-chip.active{background:var(--accent);color:#fff;border-color:var(--accent)}
+  .com-filters .clear-btn{font-size:12px;color:var(--ink-soft);cursor:pointer;text-decoration:underline}
+
+  /* ============ 功能4：批量入口 ============ */
+  .batch-bar{display:flex;gap:10px;align-items:center;margin-top:8px;flex-wrap:wrap}
+  .batch-bar .batch-btn{background:var(--paper);border:1px solid var(--line);color:var(--ink-soft);padding:10px 16px;border-radius:10px;cursor:pointer;font-size:13px;font-weight:600;transition:.2s}
+  .batch-bar .batch-btn:hover{border-color:var(--accent);color:var(--accent)}
+  .batch-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:12px;margin-top:14px}
+  .batch-cell{border:1px solid var(--line);border-radius:10px;overflow:hidden;background:#fff;display:flex;flex-direction:column}
+  .batch-cell .bc-img{aspect-ratio:1;background:#000;display:flex;align-items:center;justify-content:center;min-height:160px}
+  .batch-cell .bc-img img{width:100%;height:100%;object-fit:cover}
+  .batch-cell .bc-foot{padding:8px 10px;font-size:12px;color:var(--ink-soft);display:flex;justify-content:space-between;align-items:center}
+
+  /* ============ 功能1：我的作品 ============ */
+  .work-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:14px}
+  .work-card{background:#fff;border:1px solid var(--line);border-radius:12px;overflow:hidden;display:flex;flex-direction:column;transition:.2s}
+  .work-card:hover{box-shadow:0 6px 18px rgba(60,50,30,.12);transform:translateY(-2px)}
+  .work-card .w-img{aspect-ratio:1;background:#000;cursor:pointer}
+  .work-card .w-img img{width:100%;height:100%;object-fit:cover;display:block}
+  .work-card .w-body{padding:10px 12px;font-size:12px;color:var(--ink-soft)}
+  .work-card .w-body .w-sentence{color:var(--ink);font-style:italic;margin-bottom:6px;font-size:13px;line-height:1.5;white-space:pre-line}
+  .work-card .w-body .w-meta{font-size:11px;margin-bottom:8px}
+  .work-card .w-actions{display:flex;gap:6px;flex-wrap:wrap;padding:0 12px 12px}
+  .work-card .w-actions button{padding:5px 10px;font-size:11px;border-radius:6px;border:1px solid var(--line);background:var(--paper);color:var(--ink-soft);cursor:pointer}
+  .work-card .w-actions button:hover{border-color:var(--accent);color:var(--accent)}
+  .work-card .w-actions button.danger:hover{border-color:#c44537;color:#c44537}
+  .vis-badge{display:inline-block;padding:2px 8px;border-radius:10px;font-size:10px;font-weight:600;letter-spacing:.05em}
+  .vis-badge.public{background:#E6F4EA;color:#1e6b3a}
+  .vis-badge.private{background:#F4E6E6;color:#8a3a3a}
+
+  /* ============ 功能2：寄送箱 ============ */
+  .mb-cols{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+  @media(max-width:780px){.mb-cols{grid-template-columns:1fr}}
+  .mb-col-h{font-size:15px;font-weight:600;margin:0 0 12px;color:var(--ink);padding-bottom:8px;border-bottom:1px solid var(--line)}
+  .mb-col-h .n{display:inline-block;background:var(--accent);color:#fff;border-radius:10px;padding:1px 8px;font-size:11px;margin-left:4px}
+  .mb-card{background:#fff;border:1px solid var(--line);border-radius:10px;overflow:hidden;margin-bottom:10px;display:flex;gap:10px;padding:8px;align-items:center}
+  .mb-card .m-img{width:64px;height:64px;flex:0 0 64px;border-radius:8px;overflow:hidden;background:#000;cursor:pointer}
+  .mb-card .m-img img{width:100%;height:100%;object-fit:cover;display:block}
+  .mb-card .m-body{flex:1;font-size:12px;color:var(--ink-soft);min-width:0}
+  .mb-card .m-body .m-people{color:var(--ink);font-size:13px;font-weight:600;margin-bottom:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .mb-card .m-body .m-meta{font-size:11px}
+  .mb-card .m-body .m-status{display:inline-block;margin-top:4px;padding:2px 8px;border-radius:8px;font-size:10px;font-weight:600}
+  .mb-card .m-status.opened{background:#E6F4EA;color:#1e6b3a}
+  .mb-card .m-status.pending{background:#FFF1CC;color:#8a6b1e}
+  .mb-card .m-actions{display:flex;flex-direction:column;gap:4px}
+  .mb-card .m-actions button{padding:5px 10px;font-size:11px;border-radius:6px;border:1px solid var(--line);background:var(--paper);color:var(--ink-soft);cursor:pointer;white-space:nowrap}
+  .mb-card .m-actions button:hover{border-color:var(--accent);color:var(--accent)}
+
+  /* ============ 功能3：展览馆 ============ */
+  .gal-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:18px}
+  .gal-card{background:#fff;border:1px solid var(--line);border-radius:14px;overflow:hidden;transition:.2s}
+  .gal-card:hover{box-shadow:0 8px 24px rgba(60,50,30,.14)}
+  .gal-card .g-img{aspect-ratio:1;background:#000;cursor:pointer}
+  .gal-card .g-img img{width:100%;height:100%;object-fit:cover;display:block}
+  .gal-card .g-body{padding:14px}
+  .gal-card .g-note{background:linear-gradient(135deg,#F7F0DD,#EFE3C6);border-left:3px solid var(--accent);padding:8px 10px;font-style:italic;font-size:13px;color:#5a4621;border-radius:0 6px 6px 0;margin-bottom:8px;line-height:1.5}
+  .gal-card .g-author{font-size:12px;color:var(--ink-soft)}
+  .gal-card .g-author b{color:var(--ink)}
+
+  /* ============ 功能4：主题挑战 ============ */
+  .chl-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:14px}
+  .chl-card{background:#fff;border:1px solid var(--line);border-radius:12px;padding:16px;cursor:pointer;transition:.2s}
+  .chl-card:hover{box-shadow:0 6px 18px rgba(60,50,30,.1);border-color:var(--accent)}
+  .chl-card .c-title{font-size:16px;font-weight:700;color:var(--ink);margin-bottom:6px}
+  .chl-card .c-desc{font-size:13px;color:var(--ink-soft);line-height:1.5;margin-bottom:10px}
+  .chl-card .c-meta{display:flex;gap:12px;font-size:12px;color:var(--ink-soft);align-items:center}
+  .chl-card .c-meta .c-tag{background:var(--accent-soft);color:var(--accent);padding:2px 8px;border-radius:8px;font-weight:600}
+  .chl-detail-thumbs{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:10px;margin-top:14px}
+  .chl-detail-thumbs .t-card{border:1px solid var(--line);border-radius:8px;overflow:hidden;cursor:pointer}
+  .chl-detail-thumbs .t-card img{width:100%;aspect-ratio:1;object-fit:cover;display:block}
+  .chl-detail-thumbs .t-card .t-name{padding:4px 6px;font-size:11px;color:var(--ink-soft);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
+  /* ============ 功能8：每日打卡 ============ */
+  .ck-streak-badge{display:inline-flex;align-items:center;gap:6px;background:linear-gradient(135deg,#FFE4B5,#FFC078);color:#7a4a14;padding:4px 12px;border-radius:14px;font-size:13px;font-weight:700}
+  .ck-list{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:12px;margin-top:14px}
+  .ck-item{background:#fff;border:1px solid var(--line);border-radius:10px;overflow:hidden}
+  .ck-item .i-img{aspect-ratio:1;background:#000;cursor:pointer}
+  .ck-item .i-img img{width:100%;height:100%;object-fit:cover;display:block}
+  .ck-item .i-body{padding:8px 10px;font-size:11px;color:var(--ink-soft)}
+  .ck-item .i-body .i-date{color:var(--ink);font-weight:600;font-size:12px;margin-bottom:3px}
+  .ck-item .i-body .i-sentence{font-style:italic;line-height:1.4;white-space:pre-line}
+
+  /* ============ 功能7：关注按钮 ============ */
+  .follow-btn{padding:6px 14px;border-radius:14px;border:1px solid var(--accent);background:#fff;color:var(--accent);cursor:pointer;font-size:12px;font-weight:600;transition:.2s}
+  .follow-btn:hover{background:var(--accent);color:#fff}
+  .follow-btn.following{background:var(--accent);color:#fff}
+  .follow-btn.following:hover{background:#fff;color:var(--accent)}
+  .feed-toggle{display:flex;gap:4px;background:var(--paper);border:1px solid var(--line);border-radius:8px;padding:3px;margin-left:8px}
+  .feed-toggle button{padding:5px 12px;border:none;background:transparent;color:var(--ink-soft);font-size:12px;border-radius:6px;cursor:pointer;font-weight:600}
+  .feed-toggle button.active{background:var(--ink);color:#fff}
+
+  /* ============ 通用：精选徽章 ============ */
+  .featured-badge{position:absolute;top:8px;left:8px;background:linear-gradient(135deg,#FFC078,#E89A3C);color:#fff;padding:3px 10px;border-radius:12px;font-size:11px;font-weight:700;letter-spacing:.05em;box-shadow:0 2px 6px rgba(232,154,60,.4);z-index:1}
 </style>
 </head>
 <body>
+<script>
+// 异步拉取漫画治愈风背景：通过同源 /api/bg-image 代理，绕过浏览器 CORS
+(function(){
+  console.log('[bg] 开始拉取背景图（走同源代理）');
+  fetch('/api/bg-image')
+    .then(function(r){
+      if(!r.ok){
+        // 非 200：读取错误体打印出来，方便定位
+        return r.text().then(function(t){
+          console.warn('[bg] 代理返回 HTTP ' + r.status + ':', t);
+          throw new Error('HTTP ' + r.status);
+        });
+      }
+      return r.json();
+    })
+    .then(function(data){
+      if(!data || !data.url){ console.warn('[bg] 代理未返回 url:', data); return; }
+      var imgUrl = data.url;
+      console.log('[bg] 解析得到图片 URL:', imgUrl);
+      var probe = new Image();
+      probe.onload = function(){
+        console.log('[bg] 图片预加载成功，注入背景');
+        document.body.style.setProperty('--bg-image', 'url("' + imgUrl + '")');
+        document.body.classList.add('has-bg');
+      };
+      probe.onerror = function(){ console.warn('[bg] 图片预加载失败:', imgUrl); };
+      probe.src = imgUrl;
+    })
+    .catch(function(e){ console.warn('[bg] fetch 失败:', e); });
+})();
+</script>
 <div class="wrap">
   <header>
     <div class="kicker">Photo · Postcard</div>
@@ -461,6 +779,11 @@
   <div class="tabs" role="tablist">
     <div class="tab active" data-view="gen" role="tab"><span class="dot"></span>创作工坊</div>
     <div class="tab" data-view="com" role="tab"><span class="dot"></span>社区广场</div>
+    <div class="tab" data-view="mine" role="tab"><span class="dot"></span>我的作品</div>
+    <div class="tab" data-view="mailbox" role="tab"><span class="dot"></span>寄送箱</div>
+    <div class="tab" data-view="gallery" role="tab"><span class="dot"></span>展览馆</div>
+    <div class="tab" data-view="challenge" role="tab"><span class="dot"></span>主题挑战</div>
+    <div class="tab" data-view="checkin" role="tab"><span class="dot"></span>每日打卡</div>
   </div>
 
   <!-- ========== 视图 1：生成明信片 ========== -->
@@ -498,11 +821,33 @@
       </div>
       <div class="hint">自动压缩：上传的照片会先缩小到最长边 1024px 再发送，大幅加快速度。</div>
 
-      <label class="lbl">风格</label>
-      <select id="skillSel">
-        <option value="photo-abstract-editorial">象牙抽象编辑</option>
-      </select>
+      <label class="lbl">图像风格</label>
+      <div class="skill-picker" id="skillPicker">
+        <select id="skillSel">
+          <option value="photo-abstract-editorial">象牙抽象编辑</option>
+        </select>
+        <div class="sp-current" id="spCurrent">
+          <div class="sp-thumb" id="spCurThumb"></div>
+          <div class="sp-meta">
+            <div class="sp-name" id="spCurName">象牙抽象编辑</div>
+            <div class="sp-desc" id="spCurDesc">象牙底抽象面板 + 英文标题</div>
+          </div>
+          <span class="sp-caret">▼</span>
+        </div>
+        <div class="sp-list" id="spList"></div>
+      </div>
       <div class="hint">选择左侧图片的生成风格（6 个已安装 Codex skill 之一）。</div>
+
+      <label class="lbl">文案风格</label>
+      <select id="toneSel">
+        <option value="poetic">哲理诗意（默认）</option>
+        <option value="healing">治愈温柔</option>
+        <option value="sassy">毒舌吐槽</option>
+        <option value="love">情侣表白</option>
+        <option value="travel">旅行日记</option>
+        <option value="literary">文艺留白</option>
+      </select>
+      <div class="hint">影响右侧那句中英双语句子的情感基调。可单独点「重抽文案」切换风格重试。</div>
 
       <label class="lbl">明信片字体</label>
       <div class="font-grid">
@@ -523,8 +868,11 @@
 
       <div class="actions">
         <button class="gen" id="genBtn">生成明信片</button>
+        <button class="gen" id="compareBtn" style="background:var(--accent)">🔀 风格对比</button>
+        <button class="gen" id="batchBtn" style="background:var(--paper);color:var(--ink);border:1px solid var(--line)">📦 批量生成</button>
         <span class="status" id="status"></span>
       </div>
+      <input type="file" id="batchFile" accept="image/*" multiple style="display:none">
     </div>
 
     <div class="result" id="result">
@@ -533,19 +881,32 @@
         <div class="cardbar">
           <button id="saveBtn">保存为图片</button>
           <button id="copyBtn">复制文案</button>
+          <button id="saveWorkBtn" style="display:none">📁 存到作品库</button>
+          <button id="redoImgBtn" style="display:none">🎨 重抽图像</button>
+          <button id="redoTxtBtn" style="display:none">✍️ 重抽文案</button>
+          <button id="sendBtn">💌 寄送</button>
           <button id="shareBtn" class="primary">📤 分享到社区</button>
           <button id="againBtn">再做一张</button>
         </div>
       </div>
-      <div class="postcard" id="postcard">
-        <div class="pc-img"><img id="resultImg" alt="编辑式作品"></div>
-        <div class="pc-text">
-          <div class="stamp">POST<br>CARD</div>
-          <div class="corner">Editorial</div>
-          <div class="quote" id="resultText">……</div>
-          <div class="divider"></div>
-          <div class="meta" id="meta">由照片与文字生成</div>
+      <div class="postcard-wrap" id="postcardWrap">
+        <div class="postcard" id="postcard">
+          <div class="pc-face pc-front">
+            <div class="pc-img"><img id="resultImg" alt="编辑式作品"></div>
+            <div class="pc-text">
+              <div class="stamp">POST<br>CARD</div>
+              <div class="corner">Editorial</div>
+              <div class="quote" id="resultText">……</div>
+              <div class="divider"></div>
+              <div class="meta" id="meta">由照片与文字生成</div>
+            </div>
+          </div>
+          <div class="pc-face pc-back">
+            <img id="originalImg" alt="原始照片">
+            <div class="back-label">原始照片 · 点击翻回</div>
+          </div>
         </div>
+        <div class="flip-hint">👆 点击明信片翻转查看原图</div>
       </div>
     </div>
   </div>
@@ -557,7 +918,22 @@
       <div class="nick-row">
         <label for="nickInput">昵称</label>
         <input type="text" id="nickInput" maxlength="20" placeholder="起个名字吧">
+        <button class="btn-post-new" id="newPostBtn">✒️ 发帖</button>
       </div>
+    </div>
+
+    <div class="com-filters">
+      <div class="sort-group">
+        <button class="sort-btn active" data-sort="new">最新</button>
+        <button class="sort-btn" data-sort="hot">热门</button>
+        <button class="sort-btn" data-sort="week">本周</button>
+      </div>
+      <div class="feed-toggle" id="feedToggle">
+        <button class="active" data-feed="all">全部</button>
+        <button data-feed="follow">关注流</button>
+      </div>
+      <div class="tag-row" id="tagRow"><span style="font-size:12px;color:var(--ink-soft)">标签加载中…</span></div>
+      <span class="clear-btn" id="clearFilterBtn" style="display:none">清除筛选</span>
     </div>
 
     <div id="postGridContainer">
@@ -566,6 +942,83 @@
 
     <div class="loadmore" id="loadMoreBox" style="display:none">
       <button id="loadMoreBtn">加载更多</button>
+    </div>
+  </div>
+
+  <!-- ========== 视图 3：我的作品（功能1） ========== -->
+  <div class="view" id="view-mine">
+    <div class="com-head">
+      <h2>📁 我的作品 <span class="tag" id="mineCount">—</span></h2>
+      <div class="nick-row">
+        <span style="font-size:13px;color:var(--ink-soft)">用昵称识别你的作品库</span>
+      </div>
+    </div>
+    <div class="hint" style="margin-bottom:12px">每次生成明信片成功后会自动保存到你的作品库。可在此设置公开/私密、删除、或分享到社区。需要先在「社区广场」设置昵称。</div>
+    <div id="mineContainer">
+      <div class="empty-state"><div class="big">🗂</div><h3>点击上方 tab 进入「我的作品」</h3><p>需先设置昵称</p></div>
+    </div>
+  </div>
+
+  <!-- ========== 视图 4：寄送箱（功能2） ========== -->
+  <div class="view" id="view-mailbox">
+    <div class="com-head">
+      <h2>💌 寄送箱 <span class="tag" id="mbCount">—</span></h2>
+      <div class="nick-row">
+        <span style="font-size:13px;color:var(--ink-soft)">查看你寄出/收到的明信片</span>
+      </div>
+    </div>
+    <div class="hint" style="margin-bottom:12px">系统按昵称模糊匹配「寄出人/收件人」字段。把寄送链接发给对方后，对方打开会标记为「已拆开」。</div>
+    <div class="mb-cols">
+      <div class="mb-col">
+        <h3 class="mb-col-h">📤 寄出 <span class="n" id="mbSentN">0</span></h3>
+        <div id="mbSentList"></div>
+      </div>
+      <div class="mb-col">
+        <h3 class="mb-col-h">📥 收到 <span class="n" id="mbRecvN">0</span></h3>
+        <div id="mbRecvList"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========== 视图 5：展览馆（功能3） ========== -->
+  <div class="view" id="view-gallery">
+    <div class="com-head">
+      <h2>🏛 展览馆 <span class="tag" id="galCount">—</span></h2>
+      <div class="nick-row">
+        <button class="btn-post-new" id="galAdminBtn">🛠 管理</button>
+      </div>
+    </div>
+    <div class="hint" style="margin-bottom:12px">编辑精选 —— 由你（站长）从社区中挑选的优质作品。每张配一句策展词。</div>
+    <div id="galContainer">
+      <div class="empty-state"><div class="big">🖼</div><h3>正在加载展览馆…</h3><p>稍等片刻</p></div>
+    </div>
+  </div>
+
+  <!-- ========== 视图 6：主题挑战（功能4） ========== -->
+  <div class="view" id="view-challenge">
+    <div class="com-head">
+      <h2>🎯 主题挑战 <span class="tag" id="chlCount">—</span></h2>
+      <div class="nick-row">
+        <button class="btn-post-new" id="chlNewBtn">➕ 发起挑战</button>
+      </div>
+    </div>
+    <div class="hint" style="margin-bottom:12px">围绕一个主题创作明信片。点击某挑战查看参与作品，或在创作工坊发布时关联到挑战。</div>
+    <div id="chlContainer">
+      <div class="empty-state"><div class="big">🎯</div><h3>正在加载挑战…</h3><p>稍等片刻</p></div>
+    </div>
+  </div>
+
+  <!-- ========== 视图 7：每日打卡（功能8） ========== -->
+  <div class="view" id="view-checkin">
+    <div class="com-head">
+      <h2>📅 每日打卡 <span class="tag" id="ckStreak">—</span></h2>
+      <div class="nick-row">
+        <button class="btn-post-new" id="ckBtn">📸 今日打卡</button>
+      </div>
+    </div>
+    <div class="hint" style="margin-bottom:12px">每天生成一张明信片作为打卡记录，连续打卡可累积徽章。今日是否已打卡？<b id="ckToday">—</b></div>
+    <div id="ckContainer">
+      <div class="empty-state"><div class="big">📅</div><h3>正在加载打卡记录…</h3><p>稍等片刻</p></div>
     </div>
   </div>
 
@@ -617,6 +1070,247 @@
           <button id="dCmtSendBtn">发送</button>
         </div>
       </div>
+    </div>
+  </div>
+</div>
+
+<!-- ========== 发帖弹窗 ========== -->
+<div class="modal-mask" id="newPostModal">
+  <div class="modal" style="max-width:560px">
+    <div class="mhead">
+      <h3>✒️ 发布新帖</h3>
+      <button class="close" data-close>×</button>
+    </div>
+    <div class="mbody">
+      <input type="file" id="npFile" accept="image/*" style="display:none">
+      <div class="np-preview empty" id="npPreview">
+        <div class="np-ph">
+          <div class="big">🖼️</div>
+          <div class="t1">点击上传本地照片</div>
+          <div class="t2">支持 JPG / PNG / WebP · 自动压缩到最长边 1024px</div>
+        </div>
+      </div>
+      <div class="np-compress-info" id="npCompress" style="display:none"></div>
+      <label class="lbl">标题（可选）</label>
+      <input type="text" id="npTitle" maxlength="60" placeholder="给帖子加个标题吧">
+      <label class="lbl">说说你想分享的内容</label>
+      <textarea id="npText" maxlength="500" rows="5" placeholder="此刻的心情、照片的故事、想和大家说的话……（不超过 500 字）"></textarea>
+      <label class="lbl">昵称</label>
+      <input type="text" id="npAuthor" maxlength="20" placeholder="你想展示的名字（默认：匿名用户）">
+    </div>
+    <div class="mfoot">
+      <button class="btn-ghost" data-close>取消</button>
+      <button class="btn-primary" id="npConfirmBtn">🚀 发布</button>
+    </div>
+  </div>
+</div>
+
+<!-- ========== 风格对比弹窗（功能5） ========== -->
+<div class="modal-mask" id="compareModal">
+  <div class="modal" style="max-width:880px">
+    <div class="mhead">
+      <h3>🔀 风格对比</h3>
+      <button class="close" data-close>×</button>
+    </div>
+    <div class="mbody">
+      <div class="hint" style="margin-bottom:12px">勾选 2–4 个风格，同一张照片 + 同一句话，依次生成并排对比，帮你选出最满意的一张。</div>
+      <div id="cmpPickList" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px;margin-bottom:18px"></div>
+      <div id="cmpResults" style="display:none">
+        <div id="cmpProgress" style="font-size:13px;color:var(--ink-soft);margin-bottom:12px"></div>
+        <div id="cmpGrid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:14px"></div>
+      </div>
+    </div>
+    <div class="mfoot">
+      <button class="btn-ghost" data-close>关闭</button>
+      <button class="btn-primary" id="cmpStartBtn">开始对比生成</button>
+    </div>
+  </div>
+</div>
+
+<!-- ========== 寄送弹窗（功能7） ========== -->
+<div class="modal-mask" id="sendModal">
+  <div class="modal" style="max-width:520px">
+    <div class="mhead">
+      <h3>💌 寄送明信片</h3>
+      <button class="close" data-close>×</button>
+    </div>
+    <div class="mbody share-form">
+      <div class="mini-preview">
+        <img id="sdImg" alt="预览">
+        <div class="s-info">
+          <div class="s-sentence" id="sdSentence">…</div>
+        </div>
+      </div>
+      <label class="lbl">收件人昵称</label>
+      <input type="text" id="sdToName" maxlength="30" placeholder="例如：小明 / 亲爱的你">
+      <label class="lbl">你的署名</label>
+      <input type="text" id="sdFromName" maxlength="30" placeholder="例如：远方的我（默认沿用你的昵称）">
+      <label class="lbl">附言（可选，收件人拆开时会看到）</label>
+      <textarea id="sdMessage" maxlength="300" rows="4" placeholder="想对 Ta 说的话……"></textarea>
+      <div class="hint" style="margin-top:8px">寄送后会生成一个专属链接，把链接发给 Ta，Ta 打开就能看到拆信封动画。</div>
+    </div>
+    <div class="mfoot">
+      <button class="btn-ghost" data-close>取消</button>
+      <button class="btn-primary" id="sdConfirmBtn">💌 寄出</button>
+    </div>
+  </div>
+</div>
+
+<!-- ========== 拆信封结果弹窗（功能7） ========== -->
+<div class="modal-mask" id="envelopeModal">
+  <div class="modal" style="max-width:680px">
+    <div class="mhead">
+      <h3 id="envTitle">📬 来自远方的明信片</h3>
+      <button class="close" data-close>×</button>
+    </div>
+    <div class="mbody" id="envBody"></div>
+  </div>
+</div>
+
+<!-- ========== 作者主页弹窗（功能9） ========== -->
+<div class="modal-mask" id="authorModal">
+  <div class="modal" style="max-width:760px">
+    <div class="mhead">
+      <h3 id="auTitle">作者主页</h3>
+      <button class="close" data-close>×</button>
+    </div>
+    <div class="mbody" id="auBody"></div>
+  </div>
+</div>
+
+<!-- ========== 批量生成弹窗（功能4） ========== -->
+<div class="modal-mask" id="batchModal">
+  <div class="modal" style="max-width:880px">
+    <div class="mhead">
+      <h3>📦 批量生成</h3>
+      <button class="close" data-close>×</button>
+    </div>
+    <div class="mbody">
+      <div class="hint" style="margin-bottom:12px" id="batchHint">用当前选定的风格（<b id="batchSkillName"></b）和模式，对多张照片依次生成明信片。完成后可单独下载或全部下载。</div>
+      <div id="batchProgress" style="font-size:13px;color:var(--ink-soft);margin-bottom:12px"></div>
+      <div class="batch-grid" id="batchGrid"></div>
+    </div>
+    <div class="mfoot">
+      <button class="btn-ghost" data-close>关闭</button>
+      <button class="btn-primary" id="batchStartBtn">开始生成</button>
+      <button class="btn-primary" id="batchDlAllBtn" style="display:none">⬇ 全部下载</button>
+    </div>
+  </div>
+</div>
+
+<!-- ========== 我的作品：分享到社区弹窗（功能1） ========== -->
+<div class="modal-mask" id="shareWorkModal">
+  <div class="modal" style="max-width:520px">
+    <div class="mhead">
+      <h3>📤 分享到社区</h3>
+      <button class="close" data-close>×</button>
+    </div>
+    <div class="mbody share-form">
+      <div class="mini-preview">
+        <img id="swImg" alt="预览">
+        <div class="s-info">
+          <div class="s-sentence" id="swSentence">…</div>
+        </div>
+      </div>
+      <label class="lbl">标题（可选）</label>
+      <input type="text" id="swTitle" maxlength="60" placeholder="给这张明信片起个小标题">
+      <label class="lbl">想说的话 / 描述（可选）</label>
+      <textarea id="swDesc" maxlength="300" placeholder="创作背景、当时的心情、想和大家说的……"></textarea>
+      <label class="lbl">关联到主题挑战（可选）</label>
+      <select id="swChallenge"><option value="">不关联</option></select>
+    </div>
+    <div class="mfoot">
+      <button class="btn-ghost" data-close>取消</button>
+      <button class="btn-primary" id="swConfirmBtn">🚀 发布</button>
+    </div>
+  </div>
+</div>
+
+<!-- ========== 挑战详情弹窗（功能4） ========== -->
+<div class="modal-mask" id="challengeModal">
+  <div class="modal" style="max-width:820px">
+    <div class="mhead">
+      <h3 id="chlDetailTitle">挑战详情</h3>
+      <button class="close" data-close>×</button>
+    </div>
+    <div class="mbody" id="chlDetailBody"></div>
+  </div>
+</div>
+
+<!-- ========== 新建挑战弹窗（功能4） ========== -->
+<div class="modal-mask" id="chlNewModal">
+  <div class="modal" style="max-width:520px">
+    <div class="mhead">
+      <h3>➕ 发起主题挑战</h3>
+      <button class="close" data-close>×</button>
+    </div>
+    <div class="mbody">
+      <div class="hint" style="margin-bottom:12px">仅站长可发起挑战。需输入管理员密码（见 config.json 的 adminPassword）。</div>
+      <label class="lbl">标题</label>
+      <input type="text" id="chlTitle" maxlength="60" placeholder="例如：黄昏的港口">
+      <label class="lbl">描述</label>
+      <textarea id="chlDesc" maxlength="500" rows="3" placeholder="向参与者说明挑战的意境、要求……"></textarea>
+      <label class="lbl">建议提示词（可选，给参与者参考）</label>
+      <textarea id="chlPrompt" maxlength="500" rows="3" placeholder="例如：用抽象色块表达黄昏港边的孤寂"></textarea>
+      <label class="lbl">截止时间（可选）</label>
+      <input type="datetime-local" id="chlDeadline">
+      <label class="lbl">管理员密码</label>
+      <input type="password" id="chlPwd" maxlength="60" placeholder="config.json 里的 adminPassword">
+    </div>
+    <div class="mfoot">
+      <button class="btn-ghost" data-close>取消</button>
+      <button class="btn-primary" id="chlCreateBtn">发起</button>
+    </div>
+  </div>
+</div>
+
+<!-- ========== 展览馆管理弹窗（功能3） ========== -->
+<div class="modal-mask" id="galAdminModal">
+  <div class="modal" style="max-width:680px">
+    <div class="mhead">
+      <h3>🛠 精选管理</h3>
+      <button class="close" data-close>×</button>
+    </div>
+    <div class="mbody">
+      <div class="hint" style="margin-bottom:12px">输入帖子 ID（可在帖子详情 URL 中查看，或点击帖子下方「标记」按钮）。也可直接在社区帖子下方点「精选」按钮快速标记。</div>
+      <label class="lbl">管理员密码</label>
+      <input type="password" id="galPwd" maxlength="60" placeholder="config.json 里的 adminPassword">
+      <label class="lbl">帖子 ID</label>
+      <input type="text" id="galPostId" maxlength="60" placeholder="post_xxx">
+      <label class="lbl">策展词（精选时显示）</label>
+      <input type="text" id="galNote" maxlength="200" placeholder="一句话点评这张作品">
+      <div style="margin-top:14px;display:flex;gap:8px">
+        <button class="btn-primary" id="galFeatureOnBtn">⭐ 加入精选</button>
+        <button class="btn-ghost" id="galFeatureOffBtn">移出精选</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ========== 打卡生成弹窗（功能8） ========== -->
+<div class="modal-mask" id="checkinModal">
+  <div class="modal" style="max-width:680px">
+    <div class="mhead">
+      <h3>📅 今日打卡</h3>
+      <button class="close" data-close>×</button>
+    </div>
+    <div class="mbody">
+      <div class="hint" style="margin-bottom:12px">先在「创作工坊」生成一张明信片，再点这里把它保存为今日打卡。每个昵称每天仅一次。</div>
+      <div class="mini-preview" id="ckPrev" style="display:none">
+        <img id="ckImg" alt="预览">
+        <div class="s-info">
+          <div class="s-sentence" id="ckSentence">…</div>
+        </div>
+      </div>
+      <label class="lbl">昵称</label>
+      <input type="text" id="ckNick" maxlength="20" placeholder="沿用你的社区昵称">
+      <label class="lbl">今日一句（可选，存为打卡备注）</label>
+      <textarea id="ckNote" maxlength="300" rows="3" placeholder="今天的心情、想留的话……"></textarea>
+      <div class="hint" style="margin-top:8px" id="ckHint">尚无当前明信片，请先在「创作工坊」生成一张。</div>
+    </div>
+    <div class="mfoot">
+      <button class="btn-ghost" data-close>取消</button>
+      <button class="btn-primary" id="ckConfirmBtn">📅 打卡</button>
     </div>
   </div>
 </div>
@@ -678,11 +1372,22 @@ const drop = $('drop'), fileInput = $('file'), preview = $('preview');
 const pvImg = $('pvImg'), pvName = $('pvName'), pvSize = $('pvSize');
 const genBtn = $('genBtn'), statusEl = $('status'), result = $('result');
 let currentDataUrl = null;
+let currentRawUrl = null;   // 未压缩的原始图片，用于明信片背面展示
 let currentRawSize = 0;
 let currentMode = 'fast';
 let lastGenerated = null; // { image, sentence }
 const skillSel = $('skillSel');
+const toneSel = $('toneSel');
 let currentSkillName = '象牙抽象编辑';
+// 文案风格（功能6）
+const LS_TONE = 'pc_tone';
+let currentTone = localStorage.getItem(LS_TONE) || 'poetic';
+toneSel.value = currentTone;
+toneSel.addEventListener('change', e => {
+  currentTone = e.target.value;
+  localStorage.setItem(LS_TONE, currentTone);
+  toast('文案风格：' + (toneSel.options[toneSel.selectedIndex].text || currentTone));
+});
 
 /* ============ 明信片字体选择 ============ */
 // 字体清单（value 即 CSS font-family 名称；显示文本用对应字体预览）
@@ -738,15 +1443,19 @@ $('fontDate').addEventListener('change', e => { fontDate = e.target.value; local
 // 页面加载时拉取 skill 列表填充下拉框
 // 兜底列表（/api/skills 失败时使用，与服务器端默认保持一致）
 const SKILL_FALLBACK = [
-  { id: 'photo-abstract-editorial',   name: '象牙抽象编辑' },
-  { id: 'scenes-gathered-zine-v1-3',  name: '实景拼贴 Zine' },
-  { id: 'scene-distillation-zine-v1-3', name: '影像蒸馏 Zine' },
-  { id: 'gc-minimal-zine-poster',     name: '极简 Zine 海报' },
-  { id: 'heytea-style',               name: '喜茶风格' },
-  { id: 'ian-xiaohei-illustrations',  name: '小黑怪诞配图' },
+  { id: 'photo-abstract-editorial',    name: '象牙抽象编辑',  desc: '象牙底抽象面板 + 英文标题',          color: '#F3F0E8', accent: '#7A5A3A', emoji: '🎨' },
+  { id: 'scenes-gathered-zine-v1-3',   name: '实景拼贴 Zine', desc: '保留原图 + 撕纸边抽象延伸',          color: '#E8DFC9', accent: '#8B6F47', emoji: '📰' },
+  { id: 'scene-distillation-zine-v1-3', name: '影像蒸馏 Zine', desc: '从照片提取语义核心重创插画',        color: '#D4C9A8', accent: '#6B5436', emoji: '💧' },
+  { id: 'gc-minimal-zine-poster',      name: '极简 Zine 海报', desc: '大留白 + 单一视觉事件 + 高彩锚色', color: '#FBF9F4', accent: '#C0392B', emoji: '⬜' },
+  { id: 'heytea-style',                name: '喜茶风格',       desc: '保留实物照片 + 黑线小人涂鸦互动',  color: '#FFFFFF', accent: '#1A1A1A', emoji: '🍵' },
+  { id: 'ian-xiaohei-illustrations',   name: '小黑怪诞配图',   desc: '白底手绘小黑怪诞配图',              color: '#FAFAFA', accent: '#000000', emoji: '🖤' },
 ];
+// id -> 视觉元数据，供自定义下拉渲染缩略图
+const SKILL_VIS = {};
+SKILL_FALLBACK.forEach(s => { SKILL_VIS[s.id] = s; });
 function fillSkillSel(list){
   if (!Array.isArray(list) || !list.length) return false;
+  // 同步填充隐藏的 select（保留 skillSel.value 的读取）
   skillSel.innerHTML = '';
   list.forEach(s => {
     const opt = document.createElement('option');
@@ -754,9 +1463,63 @@ function fillSkillSel(list){
     opt.textContent = s.name;
     skillSel.appendChild(opt);
   });
+  // 填充自定义下拉列表（功能11）
+  const spList = $('spList');
+  spList.innerHTML = '';
+  list.forEach(s => {
+    const vis = SKILL_VIS[s.id] || { color: '#F3F0E8', accent: '#7A5A3A', emoji: '🎨', desc: s.name };
+    const item = document.createElement('div');
+    item.className = 'sp-item';
+    item.dataset.id = s.id;
+    item.style.setProperty('--sp-accent', vis.accent);
+    item.innerHTML = `
+      <div class="sp-thumb" style="background:${vis.color};--sp-accent:${vis.accent}">${vis.emoji}</div>
+      <div class="sp-meta">
+        <div class="sp-name"></div>
+        <div class="sp-desc"></div>
+      </div>
+      <span class="sp-check">✓</span>`;
+    item.querySelector('.sp-name').textContent = s.name;
+    item.querySelector('.sp-desc').textContent = vis.desc || s.name;
+    item.addEventListener('click', () => selectSkill(s.id));
+    spList.appendChild(item);
+  });
   currentSkillName = list[0].name;
+  updateSkillCurrent(list[0].id);
   return true;
 }
+// 更新自定义下拉"当前选中"显示
+function updateSkillCurrent(id){
+  const opt = Array.from(skillSel.options).find(o => o.value === id);
+  if (!opt) return;
+  skillSel.value = id;
+  const vis = SKILL_VIS[id] || { color: '#F3F0E8', accent: '#7A5A3A', emoji: '🎨', desc: opt.textContent };
+  const thumb = $('spCurThumb');
+  thumb.style.background = vis.color;
+  thumb.style.setProperty('--sp-accent', vis.accent);
+  thumb.textContent = vis.emoji;
+  $('spCurName').textContent = opt.textContent;
+  $('spCurDesc').textContent = vis.desc || opt.textContent;
+  currentSkillName = opt.textContent;
+  // 同步列表选中态
+  document.querySelectorAll('.sp-item').forEach(el => {
+    el.classList.toggle('active', el.dataset.id === id);
+  });
+}
+function selectSkill(id){
+  updateSkillCurrent(id);
+  skillSel.dispatchEvent(new Event('change', { bubbles: true }));
+  $('skillPicker').classList.remove('open');
+}
+// 点击当前项 → 展开/收起
+$('spCurrent').addEventListener('click', (e) => {
+  e.stopPropagation();
+  $('skillPicker').classList.toggle('open');
+});
+// 点击列表外收起
+document.addEventListener('click', (e) => {
+  if (!e.target.closest('#skillPicker')) $('skillPicker').classList.remove('open');
+});
 async function loadSkillsWithRetry(maxAttempts=2){
   for (let i=1;i<=maxAttempts;i++){
     try{
@@ -833,6 +1596,7 @@ async function setFile(file){
   const reader = new FileReader();
   reader.onload = async (e)=>{
     const rawPreviewUrl = e.target.result;
+    currentRawUrl = rawPreviewUrl;   // 保存原图用于明信片背面
     pvImg.src = rawPreviewUrl;
     pvName.textContent = file.name;
     try{
@@ -863,8 +1627,9 @@ drop.addEventListener('drop', e=>{
   if(e.dataTransfer.files[0]) setFile(e.dataTransfer.files[0]);
 });
 $('clearBtn').addEventListener('click', ()=>{
-  currentDataUrl=null; fileInput.value=''; preview.classList.remove('show');
+  currentDataUrl=null; currentRawUrl=null; fileInput.value=''; preview.classList.remove('show');
   statusEl.textContent='';
+  $('postcardWrap').classList.remove('flipped');
 });
 
 document.querySelectorAll('.mode-card').forEach(card=>{
@@ -925,6 +1690,7 @@ async function generate(){
         text: $('text').value,
         mode: currentMode,
         skill: skillSel.value,
+        tone: currentTone,
       }),
       signal: controller.signal,
     });
@@ -936,15 +1702,62 @@ async function generate(){
     statusEl.innerHTML = '<span class="spinner"></span>正在装配明信片画面…';
     await new Promise(r => setTimeout(r, 200));
 
-    $('resultImg').src = data.image;
-    $('resultText').textContent = data.sentence || '（无文案）';
+    // 处理部分成功：图或文案任一失败也展示已成功的那项，并显示重抽按钮
+    const hasImg = !!data.image;
+    const hasTxt = !!data.sentence;
+    if (hasImg) {
+      $('resultImg').src = data.image;
+      $('resultImg').style.opacity = '1';
+    } else {
+      // 图像失败：显示占位
+      $('resultImg').src = '';
+      $('resultImg').style.opacity = '0.15';
+      $('resultImg').alt = '图像生成失败：' + (data.imageError || '未知错误');
+    }
+    if (hasTxt) {
+      $('resultText').textContent = data.sentence;
+    } else {
+      $('resultText').textContent = '（文案生成失败：' + (data.sentenceError || '未知错误') + '）';
+    }
+    // 重抽按钮：仅当对应项失败时显示
+    $('redoImgBtn').style.display = hasImg ? 'none' : 'inline-block';
+    $('redoTxtBtn').style.display = hasTxt ? 'none' : 'inline-block';
+    // 寄送/分享按钮：至少有图才能寄送/分享
+    $('sendBtn').style.display = hasImg ? 'inline-block' : 'none';
+    $('shareBtn').style.display = hasImg ? 'inline-block' : 'none';
+    $('saveWorkBtn').style.display = hasImg ? 'inline-block' : 'none';
+
+    // 将用户上传的原图填入明信片背面
+    $('originalImg').src = currentRawUrl || currentDataUrl || '';
+    // 生成新明信片时回到正面
+    $('postcardWrap').classList.remove('flipped');
     const now = new Date();
     const secs = Math.round((Date.now() - t0)/1000);
     $('meta').textContent = `${now.getFullYear()}.${String(now.getMonth()+1).padStart(2,'0')}.${String(now.getDate()).padStart(2,'0')}`;
     result.classList.add('show');
-    statusEl.textContent = `✅ 完成 · 共 ${secs}s`;
+    statusEl.textContent = data.partial
+      ? `⚠️ 部分完成 · 共 ${secs}s（${hasImg ? '图像✓' : '图像✗'} · ${hasTxt ? '文案✓' : '文案✗'}）`
+      : `✅ 完成 · 共 ${secs}s`;
 
-    lastGenerated = { image: data.image, sentence: data.sentence || '' };
+    lastGenerated = { image: data.image || null, sentence: data.sentence || '' };
+    // 自动保存到我的作品（仅当用户已设置昵称时，避免匿名用户污染作品库）
+    if (hasImg && myNick) {
+      try {
+        const sr = await fetch('/api/myworks', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            ownerNick: myNick,
+            sentence: data.sentence || '',
+            image: data.image,
+            skill: skillSel.value,
+            tone: toneSel.value,
+            visibility: 'public',
+          }),
+        });
+        if (sr.ok) toast('📁 已自动存入「我的作品」', 'ok');
+      } catch (e) { /* 静默失败 */ }
+    }
     result.scrollIntoView({behavior:'smooth', block:'nearest'});
   }catch(err){
     clearInterval(tickTimer);
@@ -958,6 +1771,92 @@ async function generate(){
 }
 genBtn.addEventListener('click', generate);
 $('againBtn').addEventListener('click', generate);
+
+/* ============ 功能10：单独重抽图像 / 文案 ============ */
+async function regenerateImage(){
+  if(!currentDataUrl){ toast('请先放入一张照片', 'err'); return; }
+  const btn = $('redoImgBtn');
+  btn.disabled = true; btn.textContent = '🎨 重抽中…';
+  statusEl.innerHTML = '<span class="spinner"></span>正在重抽图像…';
+  const t0 = Date.now();
+  try{
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(new Error('重抽图像超时')), 420000);
+    const resp = await fetch('/api/generate-image', {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({
+        image: currentDataUrl,
+        text: $('text').value,
+        mode: currentMode,
+        skill: skillSel.value,
+      }),
+      signal: controller.signal,
+    });
+    clearTimeout(timeoutId);
+    const data = await resp.json();
+    if(!resp.ok || data.error) throw new Error(data.error || ('HTTP '+resp.status));
+    $('resultImg').src = data.image;
+    $('resultImg').style.opacity = '1';
+    btn.style.display = 'none';
+    if (lastGenerated) lastGenerated.image = data.image;
+    else lastGenerated = { image: data.image, sentence: '' };
+    $('sendBtn').style.display = 'inline-block';
+    $('shareBtn').style.display = 'inline-block';
+    statusEl.textContent = `✅ 图像重抽完成 · ${Math.round((Date.now()-t0)/1000)}s`;
+    toast('图像已重新生成', 'ok');
+  }catch(e){
+    statusEl.textContent = '❌ 重抽失败：' + e.message;
+    toast('重抽失败：' + e.message, 'err');
+  }finally{
+    btn.disabled = false; btn.textContent = '🎨 重抽图像';
+  }
+}
+
+async function regenerateSentence(){
+  if(!currentDataUrl){ toast('请先放入一张照片', 'err'); return; }
+  const btn = $('redoTxtBtn');
+  btn.disabled = true; btn.textContent = '✍️ 重抽中…';
+  statusEl.innerHTML = '<span class="spinner"></span>正在重抽文案…';
+  const t0 = Date.now();
+  try{
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(new Error('重抽文案超时')), 120000);
+    const resp = await fetch('/api/generate-sentence', {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({
+        image: currentDataUrl,
+        text: $('text').value,
+        tone: currentTone,
+      }),
+      signal: controller.signal,
+    });
+    clearTimeout(timeoutId);
+    const data = await resp.json();
+    if(!resp.ok || data.error) throw new Error(data.error || ('HTTP '+resp.status));
+    $('resultText').textContent = data.sentence;
+    btn.style.display = 'none';
+    if (lastGenerated) lastGenerated.sentence = data.sentence;
+    else lastGenerated = { image: null, sentence: data.sentence };
+    statusEl.textContent = `✅ 文案重抽完成 · ${Math.round((Date.now()-t0)/1000)}s`;
+    toast('文案已重新生成', 'ok');
+  }catch(e){
+    statusEl.textContent = '❌ 重抽失败：' + e.message;
+    toast('重抽失败：' + e.message, 'err');
+  }finally{
+    btn.disabled = false; btn.textContent = '✍️ 重抽文案';
+  }
+}
+$('redoImgBtn').addEventListener('click', regenerateImage);
+$('redoTxtBtn').addEventListener('click', regenerateSentence);
+
+/* ============ 明信片翻转：点击切换正反面 ============ */
+$('postcardWrap').addEventListener('click', (e)=>{
+  // 避免误触：如果点击的是按钮区域内的元素则不翻转
+  if (e.target.closest('.cardbar')) return;
+  $('postcardWrap').classList.toggle('flipped');
+});
 
 $('copyBtn').addEventListener('click', async ()=>{
   const t = $('resultText').textContent;
@@ -1002,16 +1901,19 @@ $('saveBtn').addEventListener('click', async ()=>{
     ctx.fillText('EDITORIAL', W-50, 60);
     ctx.textAlign='left';
 
-    ctx.fillStyle = '#7A5A3A';
-    ctx.font = '70px ' + quoteFontStack;
-    ctx.fillText('"', tx, 200);
+    // 明信片格式：右侧写字区，文字坐在横线上
     ctx.fillStyle = '#2B2A28';
-    ctx.font = '30px ' + quoteFontStack;
-    wrapText(ctx, sentence, tx+40, 170, W-tx-50-20, 44);
-    ctx.strokeStyle='#E3DED3'; ctx.lineWidth=1;
-    ctx.beginPath(); ctx.moveTo(tx+40, H-110); ctx.lineTo(tx+40+80, H-110); ctx.stroke();
+    ctx.font = '28px ' + quoteFontStack;
+    // 行高放大到 70，给横线留位置；文字基线即横线 y
+    const lineX = tx + 40;
+    const lineRight = W - 70;
+    const lineH = 70;
+    const firstLineY = 230;
+    wrapTextOnLines(ctx, sentence, lineX, firstLineY, lineRight - lineX, lineH);
+
+    // 底部日期（保留）
     ctx.fillStyle='#5A554E'; ctx.font='15px ' + dateFontStack;
-    ctx.fillText($('meta').textContent, tx+40, H-78);
+    ctx.fillText($('meta').textContent, lineX, H-78);
 
     const link = document.createElement('a');
     link.download = 'postcard-'+Date.now()+'.png';
@@ -1022,16 +1924,48 @@ $('saveBtn').addEventListener('click', async ()=>{
   im.src = img.src;
 });
 
-function wrapText(ctx, text, x, y, maxW, lineH){
-  let line=''; let yy=y;
-  for(let i=0;i<text.length;i++){
-    const ch = text[i];
-    const test = line+ch;
-    if(ctx.measureText(test).width > maxW && line){
-      ctx.fillText(line, x, yy); line=ch; yy+=lineH;
-    } else { line=test; }
+function wrapTextOnLines(ctx, text, x, y, maxW, lineH){
+  // 先按 \n 和宽度拆出所有行
+  const rawLines = String(text || '').split('\n');
+  const out = [];
+  for(const raw of rawLines){
+    let line = '';
+    for(let i=0;i<raw.length;i++){
+      const ch = raw[i];
+      const test = line + ch;
+      if(ctx.measureText(test).width > maxW && line){
+        out.push(line); line = ch;
+      } else { line = test; }
+    }
+    out.push(line);
   }
-  if(line) ctx.fillText(line, x, yy);
+
+  // 横线样式（明信片预印横线感）
+  ctx.strokeStyle = '#C9C2B0';
+  ctx.lineWidth = 1;
+
+  let yy = y;
+  for(const ln of out){
+    // 文字坐在横线上（基线对齐横线）
+    ctx.fillStyle = '#2B2A28';
+    ctx.fillText(ln, x, yy);
+    // 该行对应的横线
+    ctx.beginPath();
+    ctx.moveTo(x, yy + 6);
+    ctx.lineTo(x + maxW, yy + 6);
+    ctx.stroke();
+    yy += lineH;
+  }
+
+  // 下方补齐空白横线直到接近底部日期（明信片格式感）
+  const bottomLimit = 900 - 110; // H - 110，给底部日期留空
+  while(yy < bottomLimit){
+    ctx.beginPath();
+    ctx.moveTo(x, yy + 6);
+    ctx.lineTo(x + maxW, yy + 6);
+    ctx.stroke();
+    yy += lineH;
+  }
 }
 
 /* ==============================================================
@@ -1088,6 +2022,147 @@ $('shConfirmBtn').addEventListener('click', async () => {
 });
 
 /* ==============================================================
+   发帖弹窗（上传本地照片 + 写文字）
+   ============================================================== */
+let npState = { file: null, dataUrl: null, submitting: false };
+const newPostModal = $('newPostModal');
+
+$('newPostBtn').addEventListener('click', () => {
+  // 初始化表单
+  npState = { file: null, dataUrl: null, submitting: false };
+  $('npFile').value = '';
+  $('npTitle').value = '';
+  $('npText').value = '';
+  $('npAuthor').value = myNick;
+  $('npCompress').style.display = 'none';
+  const pv = $('npPreview');
+  pv.classList.add('empty');
+  pv.innerHTML = `
+    <div class="np-ph">
+      <div class="big">🖼️</div>
+      <div class="t1">点击上传本地照片</div>
+      <div class="t2">支持 JPG / PNG / WebP · 自动压缩到最长边 1024px</div>
+    </div>`;
+  $('npConfirmBtn').disabled = false;
+  $('npConfirmBtn').textContent = '🚀 发布';
+  newPostModal.classList.add('show');
+});
+
+// 点击预览区（空）→ 选文件
+$('npPreview').addEventListener('click', () => {
+  if (!npState.dataUrl) $('npFile').click();
+});
+
+// 选择文件 → 预览 + 压缩
+$('npFile').addEventListener('change', async e => {
+  const file = e.target.files[0];
+  if (!file) return;
+  if (!/^image\//.test(file.type)) { toast('请选择图片文件', 'err'); return; }
+  npState.file = file;
+
+  // 先显示原图预览（快速给用户反馈）
+  const reader = new FileReader();
+  reader.onload = ev => {
+    const pv = $('npPreview');
+    pv.classList.remove('empty');
+    pv.innerHTML = `<img src="${ev.target.result}" alt="预览"><button class="np-del" title="删除图片">×</button>`;
+    // 绑定删除按钮
+    pv.querySelector('.np-del').addEventListener('click', ev2 => {
+      ev2.stopPropagation();
+      npState = { file: null, dataUrl: null, submitting: false };
+      $('npFile').value = '';
+      $('npCompress').style.display = 'none';
+      const pv2 = $('npPreview');
+      pv2.classList.add('empty');
+      pv2.innerHTML = `
+        <div class="np-ph">
+          <div class="big">🖼️</div>
+          <div class="t1">点击上传本地照片</div>
+          <div class="t2">支持 JPG / PNG / WebP · 自动压缩到最长边 1024px</div>
+        </div>`;
+    });
+  };
+  reader.readAsDataURL(file);
+
+  // 异步压缩（与明信片生成使用相同压缩参数）
+  try {
+    const ci = $('npCompress');
+    ci.style.display = 'block';
+    ci.textContent = '⏳ 正在压缩图片…';
+    const { dataUrl, tw, th } = await compressImage(file, 1024, 0.88);
+    npState.dataUrl = dataUrl;
+    const b64Part = dataUrl.split(',')[1] || '';
+    const compressedSize = Math.round(b64Part.length * 0.75);
+    const ratio = file.size ? (compressedSize / file.size * 100).toFixed(0) : '?';
+    ci.textContent = `已压缩：${bytes(file.size)} → ${bytes(compressedSize)}（${ratio}%，${tw}×${th}）`;
+  } catch (err) {
+    console.error(err);
+    toast('图片压缩失败', 'err');
+    $('npCompress').style.display = 'none';
+    // 失败则直接用原文件 dataURL（但一般较小的都可直接提交，大文件失败让用户再试）
+    const r2 = new FileReader();
+    r2.onload = e2 => { npState.dataUrl = e2.target.result; };
+    r2.readAsDataURL(file);
+  }
+});
+
+// 提交帖子
+$('npConfirmBtn').addEventListener('click', async () => {
+  if (npState.submitting) return;
+  // 校验：图片或文字至少有一项
+  const hasImage = !!npState.dataUrl;
+  const text = $('npText').value.trim();
+  const hasText = !!text;
+  if (!hasImage && !hasText) {
+    toast('请至少上传一张图片或写点什么', 'err');
+    return;
+  }
+  if (!hasImage) {
+    toast('需要配上一张图片才能发帖哦', 'err');
+    return;
+  }
+  const author = $('npAuthor').value.trim() || '匿名用户';
+  const title = $('npTitle').value.trim();
+
+  // 如果用户改了昵称，同步保存
+  if (author && author !== myNick) {
+    myNick = author;
+    localStorage.setItem(LS_NICK, myNick);
+    $('nickInput').value = myNick;
+  }
+
+  const btn = $('npConfirmBtn');
+  npState.submitting = true;
+  btn.disabled = true;
+  btn.textContent = '发布中…';
+  try {
+    const resp = await fetch('/api/community/posts', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        author,
+        title,
+        description: text,
+        sentence: '', // 纯发帖无 AI 哲理文案
+        image: npState.dataUrl,
+      })
+    });
+    const data = await resp.json();
+    if (!resp.ok || data.error) throw new Error(data.error || '发布失败');
+    toast('🎉 发帖成功！', 'ok');
+    closeModal(newPostModal);
+    // 刷新社区列表
+    await loadCommunity(true);
+  } catch (e) {
+    toast('发布失败：' + e.message, 'err');
+  } finally {
+    npState.submitting = false;
+    btn.disabled = false;
+    btn.textContent = '🚀 发布';
+  }
+});
+
+/* ==============================================================
    弹窗通用关闭
    ============================================================== */
 document.querySelectorAll('.modal-mask').forEach(m => {
@@ -1115,7 +2190,7 @@ function closeModal(m) {
 /* ==============================================================
    社区：加载帖子列表
    ============================================================== */
-let comState = { posts: [], page: 1, pageSize: 9, total: 0, loading: false };
+let comState = { posts: [], page: 1, pageSize: 9, total: 0, loading: false, sort: 'new', tag: '' };
 
 async function loadCommunity(reset = false) {
   if (comState.loading) return;
@@ -1125,7 +2200,9 @@ async function loadCommunity(reset = false) {
   if (reset) box.innerHTML = '<div class="empty-state"><div class="big">⏳</div><h3>正在加载社区…</h3><p>稍等片刻</p></div>';
 
   try {
-    const resp = await fetch(`/api/community/posts?page=${comState.page}&pageSize=${comState.pageSize}`);
+    const params = new URLSearchParams({ page: comState.page, pageSize: comState.pageSize, sort: comState.sort });
+    if (comState.tag) params.set('tag', comState.tag);
+    const resp = await fetch('/api/community/posts?' + params.toString());
     const data = await resp.json();
     if (!resp.ok) throw new Error(data.error || '加载失败');
     comState.total = data.total;
@@ -1138,6 +2215,12 @@ async function loadCommunity(reset = false) {
     $('loadMoreBox').style.display = hasMore ? 'block' : 'none';
     $('loadMoreBtn').disabled = false;
     $('loadMoreBtn').textContent = '加载更多';
+    // 显示/隐藏清除筛选按钮
+    $('clearFilterBtn').style.display = (comState.tag || comState.sort !== 'new') ? 'inline' : 'none';
+    // 同步标签高亮
+    document.querySelectorAll('.tag-chip').forEach(c => {
+      c.classList.toggle('active', comState.tag && c.textContent.includes('#' + comState.tag));
+    });
   } catch (e) {
     if (reset) box.innerHTML = '<div class="empty-state"><div class="big">⚠️</div><h3>加载失败</h3><p>' + e.message + '</p></div>';
     else toast('加载失败：' + e.message, 'err');
@@ -1145,6 +2228,30 @@ async function loadCommunity(reset = false) {
     comState.loading = false;
   }
 }
+
+// 排序按钮 + 清除筛选（功能8）
+document.querySelectorAll('.sort-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.sort-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    comState.sort = btn.dataset.sort;
+    loadCommunity(true);
+  });
+});
+$('clearFilterBtn').addEventListener('click', () => {
+  comState.tag = '';
+  comState.sort = 'new';
+  document.querySelectorAll('.sort-btn').forEach(b => b.classList.toggle('active', b.dataset.sort === 'new'));
+  loadCommunity(true);
+});
+// 切到社区 tab 时顺便加载标签
+const _origTabHandler = document.querySelectorAll('.tab')[1].onclick;
+document.querySelectorAll('.tab').forEach(t => {
+  t.addEventListener('click', () => {
+    if (t.dataset.view === 'com') loadCommunityTags();
+  });
+});
+loadCommunityTags();
 
 $('loadMoreBtn').addEventListener('click', () => {
   $('loadMoreBtn').disabled = true;
@@ -1199,6 +2306,16 @@ function buildPostCard(p) {
   card.querySelector('.av').textContent = avatarOf(p.author);
   card.querySelector('.nm').textContent = p.author;
   card.querySelector('.tm').textContent = formatTime(p.createdAt);
+  // 功能9：作者名可点击进入主页
+  const authorEl = card.querySelector('.author');
+  if (authorEl && p.author && p.author !== '匿名用户') {
+    authorEl.style.cursor = 'pointer';
+    authorEl.title = '查看 ' + p.author + ' 的主页';
+    authorEl.addEventListener('click', e => {
+      e.stopPropagation();
+      openAuthor(p.author);
+    });
+  }
 
   // 点击图片区域打开详情
   card.querySelector('.pimg').addEventListener('click', () => openDetail(p.id));
@@ -1261,7 +2378,7 @@ async function openDetail(postId) {
   if (!post) return;
   detailPost = post;
   const liked = Array.isArray(post.likers) && post.likers.includes(myNick || 'visitor');
-  $('dTitle').textContent = post.title || '明信片详情';
+  $('dTitle').textContent = post.title || '帖子详情';
   const wrap = $('dWrap');
   wrap.innerHTML = `
     <div class="detail-img-wrap"><img src="${post.image}" alt=""></div>
@@ -1380,6 +2497,1096 @@ async function sendComment() {
   } finally {
     btn.disabled = false;
   }
+}
+
+/* ==============================================================
+   功能5：风格对比 A/B
+   ============================================================== */
+const compareModal = $('compareModal');
+let cmpState = { picked: new Set(), running: false };
+$('compareBtn').addEventListener('click', () => {
+  if (!currentDataUrl) { toast('请先放入一张照片', 'err'); return; }
+  // 填充可选风格列表
+  const list = Array.from(skillSel.options).map(o => ({ id: o.value, name: o.textContent }));
+  const pickList = $('cmpPickList');
+  pickList.innerHTML = '';
+  // 默认勾选当前 + 另 2 个
+  const defaults = new Set([skillSel.value]);
+  list.filter(s => s.id !== skillSel.value).slice(0, 2).forEach(s => defaults.add(s.id));
+  cmpState.picked = new Set(defaults);
+  list.forEach(s => {
+    const vis = SKILL_VIS[s.id] || { color: '#F3F0E8', accent: '#7A5A3A', emoji: '🎨', desc: s.name };
+    const card = document.createElement('label');
+    card.style.cssText = 'display:flex;align-items:center;gap:10px;padding:10px;border:1px solid var(--line);border-radius:10px;cursor:pointer;background:#fff;transition:.15s';
+    const checked = defaults.has(s.id);
+    card.innerHTML = `
+      <input type="checkbox" ${checked ? 'checked' : ''} style="accent-color:var(--accent);width:18px;height:18px">
+      <div style="width:36px;height:36px;border-radius:6px;background:${vis.color};font-size:18px;display:flex;align-items:center;justify-content:center;border:1px solid var(--line);position:relative;overflow:hidden">${vis.emoji}<div style="position:absolute;inset:0;background:linear-gradient(135deg,transparent 60%,${vis.accent} 60%);opacity:.25"></div></div>
+      <div style="flex:1;min-width:0">
+        <div style="font-size:13px;font-weight:700;color:var(--ink)"></div>
+        <div style="font-size:11px;color:var(--ink-soft)"></div>
+      </div>`;
+    const nameDiv = card.querySelector('div:nth-child(3) > div:first-child');
+    const descDiv = card.querySelector('div:nth-child(3) > div:last-child');
+    nameDiv.textContent = s.name;
+    descDiv.textContent = vis.desc || s.name;
+    const cb = card.querySelector('input');
+    cb.addEventListener('change', () => {
+      if (cb.checked) cmpState.picked.add(s.id);
+      else cmpState.picked.delete(s.id);
+    });
+    pickList.appendChild(card);
+  });
+  $('cmpResults').style.display = 'none';
+  $('cmpGrid').innerHTML = '';
+  $('cmpProgress').textContent = '';
+  $('cmpStartBtn').disabled = false;
+  $('cmpStartBtn').textContent = '开始对比生成';
+  compareModal.classList.add('show');
+});
+
+$('cmpStartBtn').addEventListener('click', async () => {
+  if (cmpState.running) return;
+  const ids = Array.from(cmpState.picked);
+  if (ids.length < 2) { toast('至少勾选 2 个风格才能对比', 'err'); return; }
+  if (ids.length > 4) { toast('最多对比 4 个风格', 'err'); return; }
+  if (!currentDataUrl) { toast('请先放入照片', 'err'); return; }
+  cmpState.running = true;
+  const btn = $('cmpStartBtn');
+  btn.disabled = true;
+  $('cmpResults').style.display = 'block';
+  const grid = $('cmpGrid');
+  grid.innerHTML = '';
+  const prog = $('cmpProgress');
+  // 先建占位卡
+  const cards = ids.map(id => {
+    const cell = document.createElement('div');
+    cell.style.cssText = 'border:1px solid var(--line);border-radius:12px;overflow:hidden;background:#fff;display:flex;flex-direction:column';
+    cell.innerHTML = `
+      <div class="cmp-ph" style="aspect-ratio:1;background:#000;display:flex;align-items:center;justify-content:center;color:#fff;font-size:13px;min-height:200px"><span class="spinner"></span>等待中…</div>
+      <div style="padding:10px 12px">
+        <div class="cmp-name" style="font-size:13px;font-weight:700"></div>
+        <div style="display:flex;gap:6px;margin-top:8px">
+          <button class="cmp-use btn-ghost" style="padding:6px 10px;font-size:12px">设为主图</button>
+          <button class="cmp-dl btn-ghost" style="padding:6px 10px;font-size:12px">下载</button>
+        </div>
+      </div>`;
+    const vis = SKILL_VIS[id] || { name: id };
+    cell.querySelector('.cmp-name').textContent = vis.name || id;
+    grid.appendChild(cell);
+    return { cell, id, done: false };
+  });
+  // 依次生成（避免并发触发上游限流）
+  for (let i = 0; i < cards.length; i++) {
+    const { cell, id } = cards[i];
+    prog.textContent = `生成中 ${i + 1}/${cards.length}：${(SKILL_VIS[id] || {}).name || id}…`;
+    const ph = cell.querySelector('.cmp-ph');
+    ph.innerHTML = '<span class="spinner"></span>生成中…';
+    try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(new Error('超时')), 420000);
+      const resp = await fetch('/api/generate-image', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          image: currentDataUrl,
+          text: $('text').value,
+          mode: currentMode,
+          skill: id,
+        }),
+        signal: controller.signal,
+      });
+      clearTimeout(timeoutId);
+      const data = await resp.json();
+      if (!resp.ok || data.error) throw new Error(data.error || ('HTTP ' + resp.status));
+      ph.innerHTML = '';
+      const img = document.createElement('img');
+      img.src = data.image;
+      img.style.cssText = 'width:100%;height:100%;object-fit:cover;display:block';
+      img.crossOrigin = 'anonymous';
+      ph.appendChild(img);
+      // 绑定"设为主图"
+      cell.querySelector('.cmp-use').addEventListener('click', () => {
+        selectSkill(id);
+        $('resultImg').src = data.image;
+        $('resultImg').style.opacity = '1';
+        if (lastGenerated) lastGenerated.image = data.image;
+        else lastGenerated = { image: data.image, sentence: '' };
+        result.classList.add('show');
+        closeModal(compareModal);
+        toast('已设为主图，可在下方继续配文案', 'ok');
+      });
+      // 绑定"下载"
+      cell.querySelector('.cmp-dl').addEventListener('click', () => {
+        const a = document.createElement('a');
+        a.href = data.image;
+        a.download = 'postcard-' + id + '-' + Date.now() + '.png';
+        a.click();
+      });
+    } catch (e) {
+      ph.innerHTML = '<div style="color:#fff;font-size:12px;padding:14px;text-align:center">❌ 失败<br>' + e.message.slice(0, 60) + '</div>';
+    }
+  }
+  prog.textContent = `✅ 对比完成（共 ${cards.length} 张）`;
+  btn.disabled = false;
+  btn.textContent = '重新生成';
+  cmpState.running = false;
+});
+
+/* ==============================================================
+   功能7：寄送明信片 + 拆信封动画
+   ============================================================== */
+const sendModal = $('sendModal');
+$('sendBtn').addEventListener('click', () => {
+  if (!lastGenerated || !lastGenerated.image) { toast('还没有生成明信片', 'err'); return; }
+  $('sdImg').src = lastGenerated.image;
+  $('sdSentence').textContent = lastGenerated.sentence || '（无文案）';
+  $('sdToName').value = '';
+  $('sdFromName').value = myNick;
+  $('sdMessage').value = '';
+  $('sdConfirmBtn').textContent = '💌 寄出';
+  $('sdConfirmBtn').disabled = false;
+  sendModal.classList.add('show');
+});
+
+$('sdConfirmBtn').addEventListener('click', async () => {
+  if (!lastGenerated || !lastGenerated.image) return;
+  const btn = $('sdConfirmBtn');
+  btn.disabled = true; btn.textContent = '寄出中…';
+  try {
+    const resp = await fetch('/api/cards', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        image: lastGenerated.image,
+        sentence: lastGenerated.sentence || '',
+        fromName: $('sdFromName').value.trim() || myNick || '匿名',
+        toName: $('sdToName').value.trim() || '朋友',
+        message: $('sdMessage').value.trim(),
+      })
+    });
+    const data = await resp.json();
+    if (!resp.ok || data.error) throw new Error(data.error || '寄送失败');
+    const link = location.origin + location.pathname + '?card=' + data.code;
+    // 寄送成功：在弹窗内显示链接 + 复制按钮
+    const body = sendModal.querySelector('.mbody');
+    let linkBox = document.getElementById('sdLinkBox');
+    if (!linkBox) {
+      linkBox = document.createElement('div');
+      linkBox.id = 'sdLinkBox';
+      linkBox.style.cssText = 'margin-top:16px;padding:14px;background:#FBF6EA;border:1px dashed var(--accent);border-radius:10px';
+      body.appendChild(linkBox);
+    }
+    linkBox.innerHTML = `
+      <div style="font-weight:700;color:var(--accent);margin-bottom:8px">✅ 已寄出！把下面这个链接发给 Ta：</div>
+      <div style="display:flex;gap:8px;align-items:center">
+        <input type="text" readonly value="${link}" style="flex:1;min-height:38px;font-size:13px">
+        <button class="btn-primary" id="sdCopyBtn" style="padding:8px 14px">复制</button>
+      </div>
+      <div class="hint" style="margin-top:6px">Ta 打开链接会看到拆信封动画，然后是你的明信片。</div>`;
+    $('sdCopyBtn').addEventListener('click', async () => {
+      try { await navigator.clipboard.writeText(link); toast('链接已复制', 'ok'); }
+      catch (e) { const inp = linkBox.querySelector('input'); inp.select(); document.execCommand('copy'); toast('链接已复制', 'ok'); }
+    });
+    toast('💌 已寄出，链接已生成', 'ok');
+  } catch (e) {
+    toast('寄送失败：' + e.message, 'err');
+  } finally {
+    btn.disabled = false; btn.textContent = '💌 再寄一张';
+  }
+});
+// 关闭寄送弹窗时清除链接框
+function clearSendLink() {
+  const linkBox = document.getElementById('sdLinkBox');
+  if (linkBox) linkBox.remove();
+}
+// 钩入通用 closeModal：关闭寄送弹窗时清链接
+const _origCloseModal = closeModal;
+closeModal = function(m) {
+  if (m.id === 'sendModal') clearSendLink();
+  _origCloseModal(m);
+};
+
+// 拆信封：页面加载检测 ?card=xxx
+async function checkIncomingCard() {
+  const params = new URLSearchParams(location.search);
+  const code = params.get('card');
+  if (!code) return;
+  try {
+    const resp = await fetch('/api/cards/' + encodeURIComponent(code));
+    const data = await resp.json();
+    if (!resp.ok || data.error) { console.warn('[card] 查询失败:', data.error); return; }
+    showEnvelope(data.card);
+  } catch (e) { console.warn('[card] 异常:', e.message); }
+}
+function showEnvelope(card) {
+  const body = $('envBody');
+  const fromName = card.fromName || '匿名';
+  const toName = card.toName || '朋友';
+  body.innerHTML = `
+    <div style="text-align:center;margin-bottom:10px;font-size:14px;color:var(--ink-soft)">点击红蜡封拆开信封 ✉️</div>
+    <div class="envelope" id="envEl">
+      <div class="env-back"></div>
+      <div class="env-letter">
+        <div style="font-size:12px;color:var(--ink-soft);letter-spacing:.1em">FROM</div>
+        <div id="envFrom" style="font-weight:700;margin:2px 0 8px"></div>
+        <div style="font-size:12px;color:var(--ink-soft);letter-spacing:.1em">TO</div>
+        <div id="envTo" style="font-weight:700"></div>
+      </div>
+      <div class="env-front"></div>
+      <div class="env-flap"></div>
+      <div class="env-seal" id="envSeal" title="点击拆开">💌</div>
+    </div>
+    <div class="env-card-display" id="envCardDisp" style="display:none"></div>`;
+  $('envFrom').textContent = fromName;
+  $('envTo').textContent = toName;
+  $('envTitle').textContent = '📬 来自 ' + fromName + ' 的明信片';
+  const envEl = $('envEl');
+  $('envSeal').addEventListener('click', () => {
+    envEl.classList.add('opened');
+    setTimeout(() => {
+      const disp = $('envCardDisp');
+      disp.style.display = 'block';
+      let html = `<img src="${card.image}" alt="">`;
+      if (card.sentence) html += `<div style="font-family:Georgia,serif;font-style:italic;margin-top:14px;color:var(--ink);font-size:16px;line-height:1.6;white-space:pre-line"></div>`;
+      if (card.message) html += `<div class="env-meta" style="font-style:italic;margin-top:10px"></div>`;
+      html += `<div class="env-meta" style="margin-top:10px">📅 ${formatTime(card.createdAt)}${card.opened ? ' · 已拆开' : ' · 首次拆开'}</div>`;
+      html += `<div style="margin-top:16px"><button class="btn-primary" id="envDownloadBtn" style="padding:10px 22px">⬇ 保存这张明信片</button></div>`;
+      disp.innerHTML = html;
+      if (card.sentence) disp.querySelector('div').textContent = card.sentence;
+      if (card.message) disp.querySelector('.env-meta').textContent = '「' + card.message + '」';
+      const dl = $('envDownloadBtn');
+      if (dl) dl.addEventListener('click', () => {
+        const a = document.createElement('a');
+        a.href = card.image;
+        a.download = 'postcard-' + (card.code || 'gift') + '.png';
+        a.click();
+      });
+    }, 650);
+  });
+  $('envelopeModal').classList.add('show');
+}
+checkIncomingCard();
+
+/* ==============================================================
+   功能9：作者主页
+   ============================================================== */
+async function openAuthor(name) {
+  if (!name) return;
+  const body = $('auBody');
+  $('auTitle').textContent = name + ' 的主页';
+  body.innerHTML = '<div style="text-align:center;padding:30px;color:var(--ink-soft)"><span class="spinner"></span>加载中…</div>';
+  $('authorModal').classList.add('show');
+  try {
+    const resp = await fetch('/api/community/authors/' + encodeURIComponent(name));
+    const data = await resp.json();
+    if (!resp.ok || data.error) throw new Error(data.error || '加载失败');
+    const av = data.avatar || (name.trim().charAt(0) || '?').toUpperCase();
+    body.innerHTML = `
+      <div style="display:flex;align-items:center;gap:14px;padding:10px 4px 16px;border-bottom:1px solid var(--line);margin-bottom:16px">
+        <div style="width:56px;height:56px;border-radius:50%;background:linear-gradient(135deg,#D7C8A8,#B8A37A);color:#fff;font-size:22px;display:flex;align-items:center;justify-content:center;font-weight:700">${av}</div>
+        <div>
+          <div style="font-size:18px;font-weight:700">${data.author || name}</div>
+          <div style="font-size:13px;color:var(--ink-soft);margin-top:4px">📝 ${data.postCount} 篇 · ❤️ ${data.totalLikes} 赞 · 💬 ${data.totalComments} 评论</div>
+        </div>
+      </div>
+      <div id="auGrid" class="post-grid"></div>`;
+    const grid = $('auGrid');
+    if (!data.posts || data.posts.length === 0) {
+      grid.innerHTML = '<div class="empty-state"><div class="big">🗂</div><h3>还没有作品</h3></div>';
+    } else {
+      data.posts.forEach(p => grid.appendChild(buildPostCard(p)));
+    }
+  } catch (e) {
+    body.innerHTML = '<div class="empty-state"><div class="big">⚠️</div><h3>加载失败</h3><p>' + e.message + '</p></div>';
+  }
+}
+
+/* ==============================================================
+   功能8：社区标签加载
+   ============================================================== */
+async function loadCommunityTags() {
+  try {
+    const resp = await fetch('/api/community/tags');
+    const data = await resp.json();
+    if (!resp.ok) return;
+    const row = $('tagRow');
+    if (!row) return;
+    const tags = data.tags || [];
+    if (tags.length === 0) { row.innerHTML = '<span style="font-size:12px;color:var(--ink-soft)">暂无热门标签</span>'; return; }
+    row.innerHTML = '';
+    tags.slice(0, 12).forEach(t => {
+      const chip = document.createElement('span');
+      chip.className = 'tag-chip' + (comState.tag === t.name ? ' active' : '');
+      chip.textContent = '#' + t.name + ' ' + t.count;
+      chip.addEventListener('click', () => {
+        comState.tag = (comState.tag === t.name ? '' : t.name);
+        loadCommunity(true);
+      });
+      row.appendChild(chip);
+    });
+  } catch (e) { /* 静默失败 */ }
+}
+
+/* ==============================================================
+   功能4：批量生成（多图同款 + 九宫格 + 全部下载）
+   ============================================================== */
+let batchState = { files: [], results: [], running: false };
+const batchModal = $('batchModal');
+
+$('batchBtn').addEventListener('click', () => {
+  $('batchFile').click();
+});
+
+$('batchFile').addEventListener('change', async (e) => {
+  const files = Array.from(e.target.files || []);
+  if (files.length === 0) return;
+  if (files.length > 12) { toast('一次最多批量生成 12 张', 'err'); }
+  const useFiles = files.slice(0, 12);
+  batchState.files = useFiles;
+  batchState.results = [];
+  $('batchSkillName').textContent = currentSkillName + ' / ' + (currentMode === 'quality' ? '高质量' : '快速');
+  // 建立九宫格占位
+  const grid = $('batchGrid');
+  grid.innerHTML = '';
+  useFiles.forEach((f, i) => {
+    const cell = document.createElement('div');
+    cell.className = 'batch-cell';
+    cell.innerHTML = `
+      <div class="bc-img" id="bcImg${i}"><span class="spinner"></span>等待中</div>
+      <div class="bc-foot"><span class="bc-name"></span><button class="bc-dl btn-ghost" style="padding:4px 8px;font-size:11px;display:none">下载</button></div>`;
+    cell.querySelector('.bc-name').textContent = f.name;
+    grid.appendChild(cell);
+  });
+  $('batchProgress').textContent = '已选 ' + useFiles.length + ' 张，点「开始生成」依次处理。';
+  $('batchStartBtn').style.display = 'inline-block';
+  $('batchStartBtn').disabled = false;
+  $('batchStartBtn').textContent = '开始生成';
+  $('batchDlAllBtn').style.display = 'none';
+  batchModal.classList.add('show');
+});
+
+$('batchStartBtn').addEventListener('click', async () => {
+  if (batchState.running || batchState.files.length === 0) return;
+  batchState.running = true;
+  batchState.results = [];
+  const btn = $('batchStartBtn');
+  btn.disabled = true;
+  btn.textContent = '生成中…';
+  $('batchDlAllBtn').style.display = 'none';
+  const userText = $('text').value;
+
+  for (let i = 0; i < batchState.files.length; i++) {
+    const f = batchState.files[i];
+    const imgBox = $('bcImg' + i);
+    $('batchProgress').textContent = `生成中 ${i + 1}/${batchState.files.length}：${f.name}…`;
+    imgBox.innerHTML = '<span class="spinner"></span>生成中…';
+    try {
+      // 压缩
+      const { dataUrl } = await compressImage(f, 1024, 0.88);
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(new Error('超时')), 420000);
+      const resp = await fetch('/api/generate-image', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          image: dataUrl,
+          text: userText,
+          mode: currentMode,
+          skill: skillSel.value,
+        }),
+        signal: controller.signal,
+      });
+      clearTimeout(timeoutId);
+      const data = await resp.json();
+      if (!resp.ok || data.error) throw new Error(data.error || ('HTTP ' + resp.status));
+      imgBox.innerHTML = '';
+      const img = document.createElement('img');
+      img.src = data.image;
+      imgBox.appendChild(img);
+      batchState.results.push({ name: f.name, image: data.image });
+      // 单张下载按钮
+      const dlBtn = imgBox.parentElement.querySelector('.bc-dl');
+      dlBtn.style.display = 'inline-block';
+      dlBtn.addEventListener('click', () => {
+        const a = document.createElement('a');
+        a.href = data.image;
+        a.download = 'postcard-' + f.name.replace(/\.[^.]+$/, '') + '-' + Date.now() + '.png';
+        a.click();
+      });
+    } catch (e) {
+      imgBox.innerHTML = '<div style="color:#fff;font-size:11px;padding:8px;text-align:center">❌ 失败<br>' + e.message.slice(0, 50) + '</div>';
+      batchState.results.push({ name: f.name, image: null, error: e.message });
+    }
+  }
+  const okCount = batchState.results.filter(r => r.image).length;
+  $('batchProgress').textContent = `✅ 完成：${okCount}/${batchState.files.length} 张成功`;
+  btn.disabled = false;
+  btn.textContent = '重新生成失败的';
+  if (okCount > 0) $('batchDlAllBtn').style.display = 'inline-block';
+  batchState.running = false;
+});
+
+$('batchDlAllBtn').addEventListener('click', () => {
+  const ok = batchState.results.filter(r => r.image);
+  if (ok.length === 0) { toast('没有可下载的图片', 'err'); return; }
+  toast('开始下载 ' + ok.length + ' 张，请允许浏览器多次下载', 'ok');
+  ok.forEach((r, i) => {
+    setTimeout(() => {
+      const a = document.createElement('a');
+      a.href = r.image;
+      a.download = 'postcard-' + r.name.replace(/\.[^.]+$/, '') + '-' + Date.now() + '.png';
+      a.click();
+    }, i * 600); // 间隔 600ms 避免浏览器拦截
+  });
+});
+
+/* ==============================================================
+   功能1：我的作品
+   ============================================================== */
+let mineState = { works: [], loading: false };
+
+// Tab 切换钩子：进入新 tab 时触发对应 load
+document.querySelectorAll('.tab').forEach(t => {
+  t.addEventListener('click', () => {
+    const v = t.dataset.view;
+    if (v === 'mine') loadMyWorks();
+    else if (v === 'mailbox') loadMailbox();
+    else if (v === 'gallery') loadGallery();
+    else if (v === 'challenge') loadChallenges();
+    else if (v === 'checkin') loadCheckins();
+  });
+});
+
+async function loadMyWorks() {
+  if (!myNick) {
+    $('mineContainer').innerHTML = '<div class="empty-state"><div class="big">🙋</div><h3>需要先设置昵称</h3><p>请到「社区广场」设置一个昵称，再来这里查看你的作品库。</p></div>';
+    $('mineCount').textContent = '0';
+    return;
+  }
+  if (mineState.loading) return;
+  mineState.loading = true;
+  const box = $('mineContainer');
+  box.innerHTML = '<div class="empty-state"><div class="big"><span class="spinner"></span></div><h3>加载中…</h3></div>';
+  try {
+    const resp = await fetch('/api/myworks?nick=' + encodeURIComponent(myNick));
+    const data = await resp.json();
+    if (!resp.ok) throw new Error(data.error || '加载失败');
+    mineState.works = data.works || [];
+    $('mineCount').textContent = data.total + ' 件';
+    renderMyWorks();
+  } catch (e) {
+    box.innerHTML = '<div class="empty-state"><div class="big">⚠️</div><h3>加载失败</h3><p>' + e.message + '</p></div>';
+  } finally {
+    mineState.loading = false;
+  }
+}
+
+function renderMyWorks() {
+  const box = $('mineContainer');
+  if (mineState.works.length === 0) {
+    box.innerHTML = '<div class="empty-state"><div class="big">📁</div><h3>还没有作品</h3><p>去「创作工坊」生成一张，会自动保存到这里。</p></div>';
+    return;
+  }
+  const grid = document.createElement('div');
+  grid.className = 'work-grid';
+  mineState.works.forEach(w => grid.appendChild(buildWorkCard(w)));
+  box.innerHTML = '';
+  box.appendChild(grid);
+}
+
+function buildWorkCard(w) {
+  const card = document.createElement('div');
+  card.className = 'work-card';
+  const isPublic = w.visibility !== 'private';
+  card.innerHTML = `
+    <div class="w-img"><img src="${w.image}" alt="" loading="lazy"></div>
+    <div class="w-body">
+      <div class="w-sentence"></div>
+      <div class="w-meta">
+        <span class="vis-badge ${isPublic ? 'public' : 'private'}">${isPublic ? '公开' : '私密'}</span>
+        ${w.skill ? ' · ' + w.skill : ''}
+        ${w.postId ? ' · <span style="color:#1e6b3a">已分享</span>' : ''}
+        · ${formatTime(w.createdAt)}
+      </div>
+    </div>
+    <div class="w-actions">
+      <button class="toggle-vis">${isPublic ? '🔒 设为私密' : '🌐 设为公开'}</button>
+      <button class="share">${w.postId ? '🔁 重发' : '📤 分享到社区'}</button>
+      <button class="danger">🗑 删除</button>
+    </div>`;
+  if (w.sentence) card.querySelector('.w-sentence').textContent = w.sentence;
+  card.querySelector('.w-img').addEventListener('click', () => {
+    const full = card.querySelector('.w-img img').src;
+    openImagePreview(full);
+  });
+  card.querySelector('.toggle-vis').addEventListener('click', () => updateWorkVis(w, card));
+  card.querySelector('.share').addEventListener('click', () => openShareWorkModal(w));
+  card.querySelector('.danger').addEventListener('click', () => deleteWork(w, card));
+  return card;
+}
+
+async function updateWorkVis(w, card) {
+  const newVis = w.visibility === 'private' ? 'public' : 'private';
+  try {
+    const resp = await fetch('/api/myworks/' + w.id + '/update', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ visibility: newVis }),
+    });
+    const data = await resp.json();
+    if (!resp.ok) throw new Error(data.error || '更新失败');
+    w.visibility = newVis;
+    // 局部更新
+    const isPublic = newVis !== 'private';
+    const badge = card.querySelector('.vis-badge');
+    badge.className = 'vis-badge ' + (isPublic ? 'public' : 'private');
+    badge.textContent = isPublic ? '公开' : '私密';
+    card.querySelector('.toggle-vis').textContent = isPublic ? '🔒 设为私密' : '🌐 设为公开';
+    toast('已设为' + (isPublic ? '公开' : '私密'));
+  } catch (e) { toast(e.message, 'err'); }
+}
+
+async function deleteWork(w, card) {
+  if (!confirm('确定删除这件作品吗？此操作不可撤销。')) return;
+  try {
+    const resp = await fetch('/api/myworks/' + w.id + '/delete', { method: 'POST' });
+    const data = await resp.json();
+    if (!resp.ok) throw new Error(data.error || '删除失败');
+    card.remove();
+    const idx = mineState.works.findIndex(x => x.id === w.id);
+    if (idx >= 0) mineState.works.splice(idx, 1);
+    $('mineCount').textContent = mineState.works.length + ' 件';
+    if (mineState.works.length === 0) renderMyWorks();
+    toast('已删除');
+  } catch (e) { toast(e.message, 'err'); }
+}
+
+// 手动「存到作品库」按钮
+$('saveWorkBtn').addEventListener('click', async () => {
+  if (!lastGenerated || !lastGenerated.image) { toast('当前没有可保存的明信片', 'err'); return; }
+  if (!myNick) { toast('请先在「社区广场」设置昵称', 'err'); return; }
+  try {
+    const resp = await fetch('/api/myworks', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        ownerNick: myNick,
+        sentence: lastGenerated.sentence || '',
+        image: lastGenerated.image,
+        skill: skillSel.value,
+        tone: toneSel.value,
+        visibility: 'public',
+      }),
+    });
+    const data = await resp.json();
+    if (!resp.ok) throw new Error(data.error || '保存失败');
+    toast('📁 已存入「我的作品」', 'ok');
+  } catch (e) { toast(e.message, 'err'); }
+});
+
+// 「我的作品 → 分享到社区」弹窗
+let currentShareWork = null;
+function openShareWorkModal(w) {
+  currentShareWork = w;
+  $('swImg').src = w.image;
+  $('swSentence').textContent = w.sentence || '…';
+  $('swTitle').value = w.title || '';
+  $('swDesc').value = '';
+  // 加载挑战列表供关联
+  loadChallengesIntoSelect($('swChallenge'));
+  $('shareWorkModal').classList.add('show');
+}
+async function loadChallengesIntoSelect(sel) {
+  try {
+    const resp = await fetch('/api/challenges');
+    const data = await resp.json();
+    if (!resp.ok) return;
+    const opts = ['<option value="">不关联</option>'];
+    (data.challenges || []).forEach(c => opts.push(`<option value="${c.id}">${c.title}</option>`));
+    sel.innerHTML = opts.join('');
+  } catch (e) { /* 静默 */ }
+}
+$('swConfirmBtn').addEventListener('click', async () => {
+  if (!currentShareWork) return;
+  const btn = $('swConfirmBtn');
+  btn.disabled = true; btn.textContent = '发布中…';
+  try {
+    const resp = await fetch('/api/myworks/' + currentShareWork.id + '/share', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        title: $('swTitle').value,
+        description: $('swDesc').value,
+        challengeId: $('swChallenge').value || null,
+      }),
+    });
+    const data = await resp.json();
+    if (!resp.ok) throw new Error(data.error || '发布失败');
+    currentShareWork.postId = data.post.id;
+    currentShareWork.visibility = 'public';
+    closeModal($('shareWorkModal'));
+    toast('📤 已分享到社区');
+    renderMyWorks(); // 刷新视图
+  } catch (e) {
+    toast(e.message, 'err');
+  } finally {
+    btn.disabled = false; btn.textContent = '🚀 发布';
+  }
+});
+
+/* ==============================================================
+   功能2：寄送箱
+   ============================================================== */
+async function loadMailbox() {
+  if (!myNick) {
+    $('mbSentList').innerHTML = '<div class="empty-state"><div class="big">🙋</div><h3>请先设置昵称</h3></div>';
+    $('mbRecvList').innerHTML = '';
+    $('mbCount').textContent = '0';
+    return;
+  }
+  $('mbSentList').innerHTML = '<div class="empty-state"><span class="spinner"></span>加载中…</div>';
+  $('mbRecvList').innerHTML = '<div class="empty-state"><span class="spinner"></span>加载中…</div>';
+  try {
+    const resp = await fetch('/api/mailbox?nick=' + encodeURIComponent(myNick));
+    const data = await resp.json();
+    if (!resp.ok) throw new Error(data.error || '加载失败');
+    $('mbCount').textContent = (data.sentCount + data.receivedCount) + ' 张';
+    $('mbSentN').textContent = data.sentCount;
+    $('mbRecvN').textContent = data.receivedCount;
+    renderMailboxCol($('mbSentList'), data.sent, 'sent');
+    renderMailboxCol($('mbRecvList'), data.received, 'received');
+  } catch (e) {
+    $('mbSentList').innerHTML = '<div class="empty-state"><div class="big">⚠️</div><h3>加载失败</h3><p>' + e.message + '</p></div>';
+    $('mbRecvList').innerHTML = '';
+  }
+}
+function renderMailboxCol(box, cards, type) {
+  if (cards.length === 0) {
+    box.innerHTML = '<div class="empty-state"><div class="big">📭</div><p style="font-size:13px;color:var(--ink-soft)">暂无</p></div>';
+    return;
+  }
+  box.innerHTML = '';
+  cards.forEach(c => {
+    const card = document.createElement('div');
+    card.className = 'mb-card';
+    const people = type === 'sent' ? c.toName : c.fromName;
+    const status = c.opened
+      ? '<span class="m-status opened">已拆开 · ' + formatTime(c.openedAt) + '</span>'
+      : '<span class="m-status pending">待拆开</span>';
+    card.innerHTML = `
+      <div class="m-img"><img src="${c.image}" alt="" loading="lazy"></div>
+      <div class="m-body">
+        <div class="m-people">${type === 'sent' ? '寄给 → ' : '来自 ← '}${escapeHtml(people)}</div>
+        <div class="m-meta">${formatTime(c.createdAt)}</div>
+        ${status}
+      </div>
+      <div class="m-actions">
+        ${type === 'sent' ? '<button class="copy-link">复制链接</button>' : ''}
+        <button class="view">查看</button>
+      </div>`;
+    card.querySelector('.m-img').addEventListener('click', () => showEnvelope(c));
+    card.querySelector('.view').addEventListener('click', () => showEnvelope(c));
+    const cp = card.querySelector('.copy-link');
+    if (cp) cp.addEventListener('click', () => {
+      const url = location.origin + location.pathname + '?card=' + c.code;
+      navigator.clipboard.writeText(url).then(
+        () => toast('✅ 链接已复制：' + url),
+        () => { prompt('请复制此链接：', url); }
+      );
+    });
+    box.appendChild(card);
+  });
+}
+
+/* ==============================================================
+   功能7：关注 + 关注流
+   ============================================================== */
+// 作者主页加「关注」按钮（钩入 openAuthor）
+const _origOpenAuthor = openAuthor;
+openAuthor = async function(name) {
+  await _origOpenAuthor(name);
+  // 在作者主页头部加关注按钮
+  if (!name || name === myNick) return;
+  const header = $('auBody').querySelector('div[style*="display:flex"]');
+  if (!header || header.querySelector('.follow-btn')) return;
+  const btn = document.createElement('button');
+  btn.className = 'follow-btn';
+  btn.textContent = '关注';
+  btn.style.marginLeft = 'auto';
+  header.appendChild(btn);
+  // 查询当前是否已关注
+  try {
+    const r = await fetch('/api/following/' + encodeURIComponent(name));
+    const d = await r.json();
+    // 注意：返回的 followers 列表是「关注了该作者的人」，包含 myNick 即已关注
+    const isFollowing = (d.followers || []).map(s => s.toLowerCase()).includes((myNick || '').toLowerCase());
+    btn.classList.toggle('following', isFollowing);
+    btn.textContent = isFollowing ? '已关注 ✓' : '关注 +';
+    btn.addEventListener('click', async () => {
+      if (!myNick) { toast('请先在「社区广场」设置昵称', 'err'); return; }
+      try {
+        const rr = await fetch('/api/follow', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ follower: myNick, followee: name }),
+        });
+        const dd = await rr.json();
+        if (!rr.ok) throw new Error(dd.error || '操作失败');
+        btn.classList.toggle('following', dd.following);
+        btn.textContent = dd.following ? '已关注 ✓' : '关注 +';
+        toast(dd.following ? '已关注 ' + name : '已取消关注');
+      } catch (e) { toast(e.message, 'err'); }
+    });
+  } catch (e) { /* 静默 */ }
+};
+
+// 社区顶部「全部 / 关注流」切换
+let feedMode = 'all';
+document.querySelectorAll('#feedToggle button').forEach(b => {
+  b.addEventListener('click', () => {
+    document.querySelectorAll('#feedToggle button').forEach(x => x.classList.remove('active'));
+    b.classList.add('active');
+    feedMode = b.dataset.feed;
+    if (feedMode === 'follow') {
+      if (!myNick) { toast('请先在「社区广场」设置昵称', 'err'); document.querySelector('#feedToggle button[data-feed="all"]').click(); return; }
+      loadFollowFeed();
+    } else {
+      loadCommunity(true);
+    }
+  });
+});
+async function loadFollowFeed() {
+  if (!myNick) return;
+  const box = $('postGridContainer');
+  box.innerHTML = '<div class="empty-state"><div class="big"><span class="spinner"></span></div><h3>正在加载关注流…</h3></div>';
+  try {
+    const resp = await fetch('/api/community/feed?nick=' + encodeURIComponent(myNick));
+    const data = await resp.json();
+    if (!resp.ok) throw new Error(data.error || '加载失败');
+    $('comCount').textContent = data.total + ' 篇 · 关注 ' + data.following + ' 人';
+    comState.posts = data.posts || [];
+    comState.total = data.total;
+    renderPosts();
+    $('loadMoreBox').style.display = 'none';
+  } catch (e) {
+    box.innerHTML = '<div class="empty-state"><div class="big">⚠️</div><h3>加载失败</h3><p>' + e.message + '</p></div>';
+  }
+}
+
+/* ==============================================================
+   功能8：每日打卡
+   ============================================================== */
+async function loadCheckins() {
+  if (!myNick) {
+    $('ckContainer').innerHTML = '<div class="empty-state"><div class="big">🙋</div><h3>请先设置昵称</h3></div>';
+    $('ckStreak').textContent = '0 天';
+    $('ckToday').textContent = '—';
+    return;
+  }
+  try {
+    const resp = await fetch('/api/checkins/' + encodeURIComponent(myNick));
+    const data = await resp.json();
+    if (!resp.ok) throw new Error(data.error || '加载失败');
+    $('ckStreak').textContent = '🔥 ' + data.streak + ' 天连续';
+    $('ckToday').textContent = data.todayChecked ? '✅ 已打卡' : '❌ 尚未';
+    $('ckToday').style.color = data.todayChecked ? '#1e6b3a' : '#c44537';
+    renderCheckins(data.records || []);
+  } catch (e) {
+    $('ckContainer').innerHTML = '<div class="empty-state"><div class="big">⚠️</div><h3>加载失败</h3><p>' + e.message + '</p></div>';
+  }
+}
+function renderCheckins(records) {
+  const box = $('ckContainer');
+  if (records.length === 0) {
+    box.innerHTML = '<div class="empty-state"><div class="big">📅</div><h3>还没开始打卡</h3><p>点右上角「📸 今日打卡」开始你的第一条记录吧</p></div>';
+    return;
+  }
+  const grid = document.createElement('div');
+  grid.className = 'ck-list';
+  records.forEach(r => {
+    const it = document.createElement('div');
+    it.className = 'ck-item';
+    it.innerHTML = `
+      <div class="i-img"><img src="${r.image}" alt="" loading="lazy"></div>
+      <div class="i-body">
+        <div class="i-date">${r.date}</div>
+        ${r.sentence ? '<div class="i-sentence"></div>' : ''}
+        ${r.note ? '<div style="font-size:11px;margin-top:4px;color:var(--ink-soft)">备注：' + escapeHtml(r.note) + '</div>' : ''}
+      </div>`;
+    if (r.sentence) it.querySelector('.i-sentence').textContent = r.sentence;
+    it.querySelector('.i-img').addEventListener('click', () => openImagePreview(r.image));
+    grid.appendChild(it);
+  });
+  box.innerHTML = '';
+  box.appendChild(grid);
+}
+// 打卡弹窗
+$('ckBtn').addEventListener('click', () => {
+  if (!myNick) { toast('请先在「社区广场」设置昵称', 'err'); return; }
+  $('ckNick').value = myNick;
+  $('ckNote').value = '';
+  if (lastGenerated && lastGenerated.image) {
+    $('ckPrev').style.display = 'flex';
+    $('ckImg').src = lastGenerated.image;
+    $('ckSentence').textContent = lastGenerated.sentence || '…';
+    $('ckHint').textContent = '将当前明信片保存为今日打卡。';
+  } else {
+    $('ckPrev').style.display = 'none';
+    $('ckHint').textContent = '尚无当前明信片，请先在「创作工坊」生成一张。';
+  }
+  $('checkinModal').classList.add('show');
+});
+$('ckConfirmBtn').addEventListener('click', async () => {
+  if (!lastGenerated || !lastGenerated.image) { toast('请先在创作工坊生成明信片', 'err'); return; }
+  const btn = $('ckConfirmBtn');
+  btn.disabled = true; btn.textContent = '打卡中…';
+  try {
+    const resp = await fetch('/api/checkin', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        nick: $('ckNick').value || myNick,
+        image: lastGenerated.image,
+        sentence: lastGenerated.sentence || '',
+        note: $('ckNote').value,
+      }),
+    });
+    const data = await resp.json();
+    if (!resp.ok) throw new Error(data.error || '打卡失败');
+    closeModal($('checkinModal'));
+    toast('📅 打卡成功！连续 ' + data.streak + ' 天', 'ok');
+    loadCheckins();
+  } catch (e) {
+    toast(e.message, 'err');
+  } finally {
+    btn.disabled = false; btn.textContent = '📅 打卡';
+  }
+});
+
+/* ==============================================================
+   功能3：展览馆
+   ============================================================== */
+async function loadGallery() {
+  const box = $('galContainer');
+  box.innerHTML = '<div class="empty-state"><div class="big"><span class="spinner"></span></div><h3>加载中…</h3></div>';
+  try {
+    const resp = await fetch('/api/community/featured');
+    const data = await resp.json();
+    if (!resp.ok) throw new Error(data.error || '加载失败');
+    $('galCount').textContent = data.total + ' 件';
+    renderGallery(data.posts || []);
+  } catch (e) {
+    box.innerHTML = '<div class="empty-state"><div class="big">⚠️</div><h3>加载失败</h3><p>' + e.message + '</p></div>';
+  }
+}
+function renderGallery(posts) {
+  const box = $('galContainer');
+  if (posts.length === 0) {
+    box.innerHTML = '<div class="empty-state"><div class="big">🏛</div><h3>展览馆还没有作品</h3><p>站长可点击右上角「🛠 管理」标记精选作品。</p></div>';
+    return;
+  }
+  const grid = document.createElement('div');
+  grid.className = 'gal-grid';
+  posts.forEach(p => {
+    const card = document.createElement('div');
+    card.className = 'gal-card';
+    card.innerHTML = `
+      <div class="g-img" style="position:relative">
+        <span class="featured-badge">⭐ 精选</span>
+        <img src="${p.image}" alt="" loading="lazy">
+      </div>
+      <div class="g-body">
+        ${p.featuredNote ? '<div class="g-note"></div>' : ''}
+        ${p.sentence ? '<div style="font-style:italic;color:var(--ink);margin-bottom:8px;font-size:13px;line-height:1.5;white-space:pre-line"></div>' : ''}
+        <div class="g-author">by <b></b> · ${formatTime(p.createdAt)}${p.likes ? ' · ❤️ ' + p.likes : ''}</div>
+      </div>`;
+    if (p.featuredNote) card.querySelector('.g-note').textContent = '「' + p.featuredNote + '」';
+    if (p.sentence) card.querySelector('.g-body > div:nth-child(2)').textContent = p.sentence;
+    card.querySelector('.g-author b').textContent = p.author;
+    card.querySelector('.g-img').addEventListener('click', () => openDetail(p.id));
+    grid.appendChild(card);
+  });
+  box.innerHTML = '';
+  box.appendChild(grid);
+}
+// 管理弹窗
+$('galAdminBtn').addEventListener('click', () => $('galAdminModal').classList.add('show'));
+async function adminFeature(featured) {
+  const pwd = $('galPwd').value;
+  const postId = $('galPostId').value.trim();
+  if (!pwd || !postId) { toast('请填写密码和帖子 ID', 'err'); return; }
+  try {
+    const resp = await fetch('/api/admin/feature', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        password: pwd,
+        postId,
+        featured,
+        featuredNote: $('galNote').value,
+      }),
+    });
+    const data = await resp.json();
+    if (!resp.ok) throw new Error(data.error || '操作失败');
+    toast(featured ? '⭐ 已加入精选' : '已移出精选');
+    loadGallery();
+  } catch (e) { toast(e.message, 'err'); }
+}
+$('galFeatureOnBtn').addEventListener('click', () => adminFeature(true));
+$('galFeatureOffBtn').addEventListener('click', () => adminFeature(false));
+
+/* ==============================================================
+   功能4：主题挑战
+   ============================================================== */
+async function loadChallenges() {
+  const box = $('chlContainer');
+  box.innerHTML = '<div class="empty-state"><div class="big"><span class="spinner"></span></div><h3>加载中…</h3></div>';
+  try {
+    const resp = await fetch('/api/challenges');
+    const data = await resp.json();
+    if (!resp.ok) throw new Error(data.error || '加载失败');
+    $('chlCount').textContent = data.total + ' 个';
+    renderChallenges(data.challenges || []);
+  } catch (e) {
+    box.innerHTML = '<div class="empty-state"><div class="big">⚠️</div><h3>加载失败</h3><p>' + e.message + '</p></div>';
+  }
+}
+function renderChallenges(list) {
+  const box = $('chlContainer');
+  if (list.length === 0) {
+    box.innerHTML = '<div class="empty-state"><div class="big">🎯</div><h3>暂无挑战</h3><p>站长可点击右上角「➕ 发起挑战」开启第一个主题。</p></div>';
+    return;
+  }
+  const grid = document.createElement('div');
+  grid.className = 'chl-grid';
+  list.forEach(c => {
+    const card = document.createElement('div');
+    card.className = 'chl-card';
+    const deadlineStr = c.deadline ? new Date(c.deadline).toLocaleString('zh-CN', {month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'}) : '无';
+    card.innerHTML = `
+      <div class="c-title"></div>
+      <div class="c-desc"></div>
+      <div class="c-meta">
+        <span class="c-tag">👥 ${c.participantCount || 0} 人</span>
+        <span>📅 ${formatTime(c.createdAt)}</span>
+        <span>⏰ 截止 ${deadlineStr}</span>
+      </div>`;
+    card.querySelector('.c-title').textContent = c.title;
+    card.querySelector('.c-desc').textContent = c.description || (c.prompt || '点击查看详情与参与作品');
+    card.addEventListener('click', () => openChallengeDetail(c));
+    grid.appendChild(card);
+  });
+  box.innerHTML = '';
+  box.appendChild(grid);
+}
+function openChallengeDetail(c) {
+  $('chlDetailTitle').textContent = '🎯 ' + c.title;
+  const body = $('chlDetailBody');
+  let html = `
+    <div style="margin-bottom:14px">
+      ${c.description ? '<div style="font-size:14px;line-height:1.6;margin-bottom:8px">' + escapeHtml(c.description) + '</div>' : ''}
+      ${c.prompt ? '<div class="hint" style="margin-bottom:10px">💡 建议提示词：' + escapeHtml(c.prompt) + '</div>' : ''}
+      <div style="font-size:12px;color:var(--ink-soft)">👥 参与 ${c.participantCount || 0} 人 · 📅 ${formatTime(c.createdAt)}${c.deadline ? ' · ⏰ 截止 ' + new Date(c.deadline).toLocaleString('zh-CN') : ''}</div>
+    </div>
+    <div style="display:flex;gap:8px;margin-bottom:14px">
+      <button class="btn-primary" id="chlJoinBtn">✋ 我要参与</button>
+      <button class="btn-ghost" id="chlGoCreateBtn">📷 去创作工坊</button>
+    </div>
+    <h4 style="margin:18px 0 8px;font-size:14px">参与作品（${(c.posts||[]).length}）</h4>`;
+  if ((c.posts || []).length === 0) {
+    html += '<div class="empty-state"><div class="big">📭</div><p>还没有人参与，做第一个吧</p></div>';
+  } else {
+    html += '<div class="chl-detail-thumbs">';
+    c.posts.forEach(p => {
+      html += `<div class="t-card" data-pid="${p.id}">
+        <img src="${p.image}" alt="" loading="lazy">
+        <div class="t-name"></div>
+      </div>`;
+    });
+    html += '</div>';
+  }
+  body.innerHTML = html;
+  if (c.posts && c.posts.length) {
+    body.querySelectorAll('.t-card').forEach((el, i) => {
+      el.querySelector('.t-name').textContent = c.posts[i].author || '匿名';
+      el.addEventListener('click', () => {
+        closeModal($('challengeModal'));
+        openDetail(c.posts[i].id);
+      });
+    });
+  }
+  $('chlJoinBtn').addEventListener('click', async () => {
+    if (!myNick) { toast('请先在「社区广场」设置昵称', 'err'); return; }
+    try {
+      const resp = await fetch('/api/challenges/' + c.id + '/join', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ nick: myNick }),
+      });
+      const data = await resp.json();
+      if (!resp.ok) throw new Error(data.error || '操作失败');
+      toast('✋ 已报名「' + c.title + '」');
+    } catch (e) { toast(e.message, 'err'); }
+  });
+  $('chlGoCreateBtn').addEventListener('click', () => {
+    closeModal($('challengeModal'));
+    // 切到创作工坊 tab
+    document.querySelector('.tab[data-view="gen"]').click();
+  });
+  $('challengeModal').classList.add('show');
+}
+// 新建挑战
+$('chlNewBtn').addEventListener('click', () => $('chlNewModal').classList.add('show'));
+$('chlCreateBtn').addEventListener('click', async () => {
+  const btn = $('chlCreateBtn');
+  btn.disabled = true; btn.textContent = '发起中…';
+  try {
+    const dl = $('chlDeadline').value;
+    const deadline = dl ? new Date(dl).getTime() : null;
+    const resp = await fetch('/api/challenges', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        title: $('chlTitle').value,
+        description: $('chlDesc').value,
+        prompt: $('chlPrompt').value,
+        deadline,
+        password: $('chlPwd').value,
+      }),
+    });
+    const data = await resp.json();
+    if (!resp.ok) throw new Error(data.error || '发起失败');
+    closeModal($('chlNewModal'));
+    toast('✅ 挑战已发起');
+    loadChallenges();
+  } catch (e) {
+    toast(e.message, 'err');
+  } finally {
+    btn.disabled = false; btn.textContent = '发起';
+  }
+});
+
+/* ==============================================================
+   通用工具：HTML 转义 + 图片预览
+   ============================================================== */
+function escapeHtml(s) {
+  return String(s || '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+function openImagePreview(src) {
+  let m = document.getElementById('imgPreviewModal');
+  if (!m) {
+    m = document.createElement('div');
+    m.id = 'imgPreviewModal';
+    m.className = 'modal-mask';
+    m.innerHTML = '<div class="modal" style="max-width:90vw;max-height:92vh"><div class="mhead"><h3>图片预览</h3><button class="close" data-close>×</button></div><div class="mbody" style="text-align:center;padding:0"><img id="imgPreviewEl" style="max-width:100%;max-height:80vh;display:block"></div></div>';
+    document.body.appendChild(m);
+    // 注册点击关闭
+    m.addEventListener('click', e => { if (e.target === m) m.classList.remove('show'); });
+    m.querySelector('[data-close]').addEventListener('click', () => m.classList.remove('show'));
+  }
+  document.getElementById('imgPreviewEl').src = src;
+  m.classList.add('show');
 }
 </script>
 </body>

@@ -12,6 +12,8 @@ if not exist "%NODE%" (
 echo Starting server... the browser will open automatically.
 echo To stop the server: press Ctrl+C or close this window.
 echo ================================================
+echo If the browser does not open, manually visit: http://127.0.0.1:5123
+echo ================================================
 "%NODE%" server.js
 echo.
 echo Server stopped. Press any key to close this window.
