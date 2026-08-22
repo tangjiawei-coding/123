@@ -1049,43 +1049,6 @@ const server = http.createServer(async (req, res) => {
     return;
   }
 
-  // 背景图代理：绕过浏览器 CORS，直接由后端请求文生图 API 并解析出真实图片 URL
-  if (req.method === 'GET' && url === '/api/bg-image') {
-    try {
-      const prompt = 'Soft watercolor manga healing illustration, warm cream and beige background with bold prominent painted patterns: large fluffy white clouds, a cozy cottage with flower garden, small birds, stars and sun rays, clear visible brushwork and distinct illustrative motifs, high contrast cute details, dreamy peaceful healing atmosphere, suitable as website background';
-      const apiUrl = 'https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=' + encodeURIComponent(prompt) + '&image_size=landscape_16_9';
-      console.log('[bg-image] 请求上游: ' + apiUrl.slice(0, 100) + '...');
-      // 文生图较慢，给 60s 超时；加 User-Agent 避免被某些网关拒绝
-      const r = await httpsRequest('GET', apiUrl, { 'User-Agent': 'PostcardStudio/1.0' }, null, 60000);
-      console.log('[bg-image] 上游返回 HTTP ' + r.statusCode + ', body 长度 ' + r.body.length);
-      const txt = r.body.toString('utf8');
-      if (r.statusCode !== 200) {
-        res.writeHead(502, { 'Content-Type': 'application/json; charset=utf-8' });
-        res.end(JSON.stringify({ error: '上游 HTTP ' + r.statusCode, raw: txt.slice(0, 300) }));
-        return;
-      }
-      // 解析 Markdown ![](url) 或纯 URL
-      let imgUrl = null;
-      const m = /!\[[^\]]*\]\(([^)]+)\)/.exec(txt);
-      if (m) imgUrl = m[1].trim();
-      else { const m2 = /(https?:\/\/[^\s")]+)/.exec(txt); if (m2) imgUrl = m2[1]; }
-      if (!imgUrl) {
-        console.warn('[bg-image] 未解析出 URL, 原始返回:', txt.slice(0, 200));
-        res.writeHead(502, { 'Content-Type': 'application/json; charset=utf-8' });
-        res.end(JSON.stringify({ error: '未能解析图片URL', raw: txt.slice(0, 300) }));
-        return;
-      }
-      console.log('[bg-image] 解析成功: ' + imgUrl);
-      res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
-      res.end(JSON.stringify({ url: imgUrl }));
-    } catch (e) {
-      console.error('[bg-image] 异常:', e.message);
-      res.writeHead(502, { 'Content-Type': 'application/json; charset=utf-8' });
-      res.end(JSON.stringify({ error: e.message || '背景图代理失败' }));
-    }
-    return;
-  }
-
   // 所有 skill 加载状态（调试用，返回每个 skill 是否加载成功）
   if (req.method === 'GET' && url.startsWith('/api/skill')) {
     res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });

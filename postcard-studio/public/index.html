@@ -738,34 +738,15 @@
 </head>
 <body>
 <script>
-// 异步拉取漫画治愈风背景：通过同源 /api/bg-image 代理，绕过浏览器 CORS
+// 漫画治愈风背景：直接用本地静态文件 /bg.jpg，无需外部 API
 (function(){
-  console.log('[bg] 开始拉取背景图（走同源代理）');
-  fetch('/api/bg-image')
-    .then(function(r){
-      if(!r.ok){
-        // 非 200：读取错误体打印出来，方便定位
-        return r.text().then(function(t){
-          console.warn('[bg] 代理返回 HTTP ' + r.status + ':', t);
-          throw new Error('HTTP ' + r.status);
-        });
-      }
-      return r.json();
-    })
-    .then(function(data){
-      if(!data || !data.url){ console.warn('[bg] 代理未返回 url:', data); return; }
-      var imgUrl = data.url;
-      console.log('[bg] 解析得到图片 URL:', imgUrl);
-      var probe = new Image();
-      probe.onload = function(){
-        console.log('[bg] 图片预加载成功，注入背景');
-        document.body.style.setProperty('--bg-image', 'url("' + imgUrl + '")');
-        document.body.classList.add('has-bg');
-      };
-      probe.onerror = function(){ console.warn('[bg] 图片预加载失败:', imgUrl); };
-      probe.src = imgUrl;
-    })
-    .catch(function(e){ console.warn('[bg] fetch 失败:', e); });
+  var imgUrl = '/bg.jpg';
+  var probe = new Image();
+  probe.onload = function(){
+    document.body.style.setProperty('--bg-image', 'url("' + imgUrl + '")');
+    document.body.classList.add('has-bg');
+  };
+  probe.src = imgUrl;
 })();
 </script>
 <div class="wrap">
