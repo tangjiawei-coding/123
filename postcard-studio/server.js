@@ -6,7 +6,7 @@ const path = require('path');
 const { exec } = require('child_process');
 const config = require('./config.json');
 
-const PORT = config.port || 5123;
+const PORT = Number(process.env.PORT) || config.port || 5123;
 const PUBLIC_DIR = path.join(__dirname, 'public');
 const DATA_DIR = path.join(__dirname, 'data');
 const IMG_DIR = path.join(DATA_DIR, 'community_images');
@@ -1431,7 +1431,7 @@ const server = http.createServer(async (req, res) => {
   serveStatic(req, res);
 });
 
-server.listen(PORT, '127.0.0.1', () => {
+server.listen(PORT, '0.0.0.0', () => {
   const url = 'http://127.0.0.1:' + PORT;
   console.log('================================================');
   console.log('  明信片生成服务已启动');
