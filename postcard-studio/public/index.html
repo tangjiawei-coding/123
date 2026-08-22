@@ -32,19 +32,16 @@
   html,body{margin:0;padding:0}
   body{
     font-family:-apple-system,"Segoe UI","Microsoft YaHei",sans-serif;
-    background:
-      linear-gradient(180deg, rgba(237,231,218,0.15) 0%, rgba(229,222,207,0.22) 100%),
-      linear-gradient(180deg,#EDE7DA 0%,#E5DECF 100%);
-    background-color:#EDE7DA;
+    background-color:#F5EFE0;
+    background-image:
+      linear-gradient(180deg, rgba(245,239,224,0.3) 0%, rgba(235,228,210,0.4) 100%),
+      url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='1200' height='800' viewBox='0 0 1200 800'><defs><linearGradient id='sky' x1='0' y1='0' x2='0' y2='1'><stop offset='0%25' stop-color='%23FFF8EC'/><stop offset='100%25' stop-color='%23F0E6D2'/></linearGradient></defs><rect width='1200' height='800' fill='url(%23sky)'/><g opacity='0.85'><ellipse cx='200' cy='120' rx='80' ry='35' fill='%23FFF' opacity='0.7'/><ellipse cx='250' cy='110' rx='60' ry='30' fill='%23FFF' opacity='0.7'/><ellipse cx='900' cy='80' rx='70' ry='30' fill='%23FFF' opacity='0.6'/><ellipse cx='950' cy='90' rx='50' ry='25' fill='%23FFF' opacity='0.6'/><ellipse cx='600' cy='150' rx='90' ry='40' fill='%23FFF' opacity='0.5'/></g><g opacity='0.6'><circle cx='100' cy='60' r='3' fill='%23E8C84B'/><circle cx='1050' cy='200' r='2.5' fill='%23E8C84B'/><circle cx='400' cy='40' r='2' fill='%23E8C84B'/><circle cx='700' cy='250' r='2.5' fill='%23E8C84B'/><circle cx='1100' cy='350' r='2' fill='%23E8C84B'/></g><g transform='translate(80,250)'><rect x='0' y='30' width='80' height='50' rx='4' fill='%23D4A574' opacity='0.7'/><polygon points='0,30 40,0 80,30' fill='%23B8895A' opacity='0.7'/><rect x='30' y='45' width='20' height='35' fill='%238B6F47' opacity='0.6'/><rect x='60' y='10' width='15' height='25' fill='%23A0826D' opacity='0.6'/></g><g transform='translate(950,300)'><rect x='0' y='30' width='70' height='45' rx='4' fill='%23C9B896' opacity='0.65'/><polygon points='0,30 35,0 70,30' fill='%23A89478' opacity='0.65'/><rect x='25' y='45' width='18' height='30' fill='%2375604A' opacity='0.55'/></g><g opacity='0.5'><ellipse cx='300' cy='500' rx='40' ry='15' fill='%23C8A2C8'/><ellipse cx='850' cy='480' rx='35' ry='12' fill='%23F4A460'/><ellipse cx='500' cy='550' rx='45' ry='16' fill='%23B0C4DE'/><ellipse cx='150' cy='600' rx='30' ry='10' fill='%23C8A2C8'/><ellipse cx='1000' cy='580' rx='38' ry='13' fill='%23F4A460'/></g><g opacity='0.4'><path d='M0,650 Q300,620 600,640 T1200,630 L1200,800 L0,800 Z' fill='%23D9C9A8'/><path d='M0,680 Q400,660 800,670 T1200,660 L1200,800 L0,800 Z' fill='%23C9B896' opacity='0.6'/></g><g opacity='0.5'><circle cx='350' cy='700' r='6' fill='%23F4A460'/><circle cx='360' cy='695' r='4' fill='%23F4A460'/><circle cx='800' cy='720' r='5' fill='%23C8A2C8'/><circle cx='810' cy='715' r='3.5' fill='%23C8A2C8'/></g></svg>");
+    background-size:cover;
+    background-attachment:fixed;
+    background-position:center;
     color:var(--ink);
     min-height:100vh;
     padding:24px 16px 64px;
-  }
-  body.has-bg{
-    background:
-      linear-gradient(180deg, rgba(237,231,218,0.15) 0%, rgba(229,222,207,0.22) 100%),
-      var(--bg-image) center/cover no-repeat fixed;
-    background-color:#EDE7DA;
   }
   .wrap{max-width:1080px;margin:0 auto}
   header{text-align:center;margin-bottom:20px}
@@ -737,18 +734,6 @@
 </style>
 </head>
 <body>
-<script>
-// 漫画治愈风背景：直接用本地静态文件 /bg.jpg，无需外部 API
-(function(){
-  var imgUrl = '/bg.jpg';
-  var probe = new Image();
-  probe.onload = function(){
-    document.body.style.setProperty('--bg-image', 'url("' + imgUrl + '")');
-    document.body.classList.add('has-bg');
-  };
-  probe.src = imgUrl;
-})();
-</script>
 <div class="wrap">
   <header>
     <div class="kicker">Photo · Postcard</div>
