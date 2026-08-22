@@ -1043,9 +1043,14 @@ const server = http.createServer(async (req, res) => {
   }
 
   // skill 列表（供前端下拉框用，不泄露提示词全文）
+  // 只返回提示词加载成功的 skill，避免部署环境展示无法生成的风格
   if (req.method === 'GET' && url === '/api/skills') {
+    const available = SKILLS.filter(s => {
+      const e = SKILL_PROMPTS.get(s.id);
+      return !!(e && e.loaded);
+    });
     res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
-    res.end(JSON.stringify(SKILLS.map(s => ({ id: s.id, name: s.name, desc: s.desc }))));
+    res.end(JSON.stringify(available.map(s => ({ id: s.id, name: s.name, desc: s.desc }))));
     return;
   }
 
@@ -1432,13 +1437,17 @@ server.listen(PORT, '0.0.0.0', () => {
     }
     console.log('================================================');
   })();
-  // 自动打开浏览器：Windows 用 start 命令，URL 必须用引号包住避免被解析成窗口标题
-  exec('start "" "' + url + '"', (err) => {
-    if (err) {
-      console.warn('  ⚠ 自动打开浏览器失败：' + err.message);
-      console.warn('    请手动访问： ' + url);
-    } else {
-      console.log('  ✓ 已自动打开浏览器');
-    }
-  });
+  // 自动打开浏览器：仅 Windows 本地开发时执行；Linux 服务器无 start 命令，跳过避免报错
+  if (process.platform === 'win32') {
+    exec('start "" "' + url + '"', (err) => {
+      if (err) {
+        console.warn('  ⚠ 自动打开浏览器失败：' + err.message);
+        console.warn('    请手动访问： ' + url);
+      } else {
+        console.log('  ✓ 已自动打开浏览器');
+      }
+    });
+  } else {
+    console.log('  （服务器模式，不自动打开浏览器）外部访问： http://<服务器IP>:' + PORT);
+  }
 });

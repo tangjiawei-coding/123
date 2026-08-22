@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>明信片工作室 · Android 版下载</title>
+<style>
+  :root {
+    --ivory: #F3F0E8;
+    --ink: #1c1a17;
+    --accent: #C4442A;
+    --muted: #8a857c;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: var(--ivory);
+    color: var(--ink);
+    font-family: "PingFang SC", "Microsoft YaHei", "Noto Sans SC", sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+  .page { max-width: 720px; margin: 0 auto; padding: 48px 24px 64px; }
+  header { text-align: center; margin-bottom: 32px; }
+  .kicker {
+    display: inline-block;
+    font-size: 12px;
+    letter-spacing: .35em;
+    color: var(--muted);
+    border: 1px solid var(--muted);
+    padding: 6px 14px;
+    border-radius: 999px;
+    margin-bottom: 20px;
+  }
+  h1 { font-size: 34px; letter-spacing: .06em; margin-bottom: 10px; }
+  .sub { color: var(--muted); font-size: 15px; }
+  .hero {
+    width: 100%;
+    border-radius: 14px;
+    display: block;
+    margin: 28px 0;
+    box-shadow: 0 18px 40px rgba(28, 26, 23, .12);
+  }
+  .card {
+    background: #fffdf8;
+    border: 1px solid #e4ded1;
+    border-radius: 16px;
+    padding: 32px 28px;
+    text-align: center;
+  }
+  .btn {
+    display: inline-block;
+    background: var(--accent);
+    color: #fff;
+    text-decoration: none;
+    font-size: 18px;
+    letter-spacing: .12em;
+    padding: 16px 44px;
+    border-radius: 999px;
+    box-shadow: 0 10px 24px rgba(196, 68, 42, .35);
+    transition: transform .15s ease;
+  }
+  .btn:active { transform: scale(.97); }
+  .qr-wrap { margin-top: 24px; }
+  .qr-wrap img {
+    width: 168px; height: 168px;
+    border: 8px solid #fff;
+    outline: 1px solid #e4ded1;
+    border-radius: 12px;
+  }
+  .qr-tip { font-size: 13px; color: var(--muted); margin-top: 10px; }
+  .url-line {
+    margin-top: 14px;
+    font-size: 13px;
+    color: var(--muted);
+    word-break: break-all;
+  }
+  .steps { margin: 36px 4px 0; }
+  .steps h2 { font-size: 16px; letter-spacing: .2em; color: var(--muted); margin-bottom: 16px; }
+  .step {
+    display: flex; gap: 14px; align-items: flex-start;
+    padding: 14px 0;
+    border-top: 1px dashed #d8d2c4;
+    font-size: 15px; line-height: 1.7;
+  }
+  .step b {
+    flex: 0 0 26px; height: 26px;
+    background: var(--ink); color: var(--ivory);
+    border-radius: 50%;
+    display: inline-flex; align-items: center; justify-content: center;
+    font-size: 13px; font-weight: 600;
+    margin-top: 2px;
+  }
+  footer {
+    margin-top: 44px;
+    text-align: center;
+    font-size: 13px;
+    color: var(--muted);
+  }
+  footer a { color: var(--accent); text-decoration: none; }
+</style>
+</head>
+<body>
+<div class="page">
+  <header>
+    <span class="kicker">POSTCARD STUDIO</span>
+    <h1>明信片工作室</h1>
+    <p class="sub">上传一张照片，生成属于你的抽象编辑风明信片</p>
+  </header>
+
+  <img class="hero" alt="明信片工作室插画"
+       src="https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=Minimalist%20editorial%20illustration%20of%20abstract%20travel%20postcards%20scattered%20on%20ivory%20paper%2C%20soft%20beige%20and%20warm%20gray%20tones%2C%20one%20small%20vermilion%20red%20sun%20accent%2C%20generous%20whitespace%2C%20flat%20matte%20design%2C%20no%20text&image_size=landscape_16_9">
+
+  <div class="card">
+    <a class="btn" href="/postcard.apk">下载 Android 安装包</a>
+    <div class="qr-wrap">
+      <img alt="下载页二维码" src="https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=http://120.55.251.74/">
+      <p class="qr-tip">手机扫码打开本页下载</p>
+    </div>
+    <p class="url-line">下载地址：http://120.55.251.74/postcard.apk</p>
+  </div>
+
+  <div class="steps">
+    <h2>安装三步</h2>
+    <div class="step"><b>1</b><span>点击按钮下载 <b style="all:unset">postcard.apk</b> 安装包（约几十 MB，请耐心等待）。</span></div>
+    <div class="step"><b>2</b><span>打开下载的文件，系统提示时选择「允许安装未知应用」后继续安装。</span></div>
+    <div class="step"><b>3</b><span>打开 App 即可使用——服务器地址已内置，无需任何配置。</span></div>
+  </div>
+
+  <footer>
+    不想装 App？<a href="/studio/">试试网页版</a> · 服务状态：<a href="/api/health">/api/health</a>
+  </footer>
+</div>
+</body>
+</html>

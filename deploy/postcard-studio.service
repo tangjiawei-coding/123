@@ -1,0 +1,16 @@
+[Unit]
+Description=Postcard Studio Node Server
+After=network.target
+
+[Service]
+Type=simple
+WorkingDirectory=/opt/postcard-studio
+Environment=PORT=5123
+ExecStart=/usr/bin/node /opt/postcard-studio/server.js
+Restart=on-failure
+RestartSec=3
+StandardOutput=append:/var/log/postcard-studio.log
+StandardError=append:/var/log/postcard-studio.log
+
+[Install]
+WantedBy=multi-user.target

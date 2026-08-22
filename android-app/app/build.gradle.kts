@@ -14,7 +14,8 @@ android {
         versionCode = 1
         versionName = "1.0.0"
 
-        buildConfigField("String", "DEFAULT_API_BASE_URL", "\"http://10.0.2.2:5123/\"")
+        // 阿里云 ECS 公网部署地址（nginx 80 端口反代到 Node 服务）
+        buildConfigField("String", "DEFAULT_API_BASE_URL", "\"http://120.55.251.74/\"")
     }
 
     buildFeatures {
