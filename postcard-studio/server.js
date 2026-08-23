@@ -3,6 +3,7 @@ const http = require('http');
 const https = require('https');
 const fs = require('fs');
 const path = require('path');
+const crypto = require('crypto');
 const { exec } = require('child_process');
 const config = require('./config.json');
 
@@ -14,6 +15,8 @@ const DB_FILE = path.join(DATA_DIR, 'community.json');
 const CARDS_FILE = path.join(DATA_DIR, 'cards.json');
 const MYWORKS_FILE = path.join(DATA_DIR, 'myworks.json');
 const FOLLOWS_FILE = path.join(DATA_DIR, 'follows.json');
+const USERS_FILE = path.join(DATA_DIR, 'users.json');
+const SESSIONS_FILE = path.join(DATA_DIR, 'sessions.json');
 
 // 确保数据目录存在
 if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
@@ -22,6 +25,8 @@ if (!fs.existsSync(DB_FILE)) fs.writeFileSync(DB_FILE, JSON.stringify({ posts: [
 if (!fs.existsSync(CARDS_FILE)) fs.writeFileSync(CARDS_FILE, JSON.stringify({ cards: [] }, null, 2));
 if (!fs.existsSync(MYWORKS_FILE)) fs.writeFileSync(MYWORKS_FILE, JSON.stringify({ works: [] }, null, 2));
 if (!fs.existsSync(FOLLOWS_FILE)) fs.writeFileSync(FOLLOWS_FILE, JSON.stringify({ relations: [] }, null, 2));
+if (!fs.existsSync(USERS_FILE)) fs.writeFileSync(USERS_FILE, JSON.stringify({ users: [] }, null, 2));
+if (!fs.existsSync(SESSIONS_FILE)) fs.writeFileSync(SESSIONS_FILE, JSON.stringify({ sessions: {} }, null, 2));
 
 // ---------- 社区数据读写 ----------
 function loadDB() {
@@ -78,6 +83,49 @@ function genId(prefix) {
 // 生成短邀请码（用于寄送链接，比完整 id 更友好）
 function genInviteCode() {
   return 'pc' + Date.now().toString(36).slice(-4) + Math.random().toString(36).slice(2, 6);
+}
+
+// ---------- 用户与会话 ----------
+const SESSION_TTL_MS = 30 * 24 * 60 * 60 * 1000; // 会话有效期 30 天
+function loadUsers() {
+  try {
+    const d = JSON.parse(fs.readFileSync(USERS_FILE, 'utf8'));
+    if (!d.users) d.users = [];
+    return d;
+  } catch (e) { console.error('[users] 读取失败，重置为空', e.message); return { users: [] }; }
+}
+function saveUsers(d) { fs.writeFileSync(USERS_FILE, JSON.stringify(d, null, 2)); }
+function loadSessions() {
+  try {
+    const d = JSON.parse(fs.readFileSync(SESSIONS_FILE, 'utf8'));
+    if (!d.sessions) d.sessions = {};
+    // 顺手清理过期会话
+    const now = Date.now();
+    for (const t of Object.keys(d.sessions)) {
+      if (!d.sessions[t] || (d.sessions[t].expiresAt || 0) < now) delete d.sessions[t];
+    }
+    return d;
+  } catch (e) { console.error('[sessions] 读取失败，重置为空', e.message); return { sessions: {} }; }
+}
+function saveSessions(d) { fs.writeFileSync(SESSIONS_FILE, JSON.stringify(d, null, 2)); }
+function hashPassword(password, salt) {
+  return crypto.scryptSync(password, salt, 64).toString('hex');
+}
+function createSession(username) {
+  const token = crypto.randomBytes(24).toString('hex');
+  const d = loadSessions();
+  d.sessions[token] = { user: username, expiresAt: Date.now() + SESSION_TTL_MS };
+  saveSessions(d);
+  return token;
+}
+// 从 Authorization: Bearer <token> 解析当前登录用户，未登录返回 null
+function getAuthUser(req) {
+  const m = /^Bearer\s+(.+)$/i.exec(req.headers['authorization'] || '');
+  if (!m) return null;
+  const d = loadSessions();
+  const s = d.sessions[m[1].trim()];
+  if (!s || (s.expiresAt || 0) < Date.now()) return null;
+  return s.user;
 }
 // 把 dataURL 保存为图片文件，返回相对路径 ID
 function saveImageFromDataUrl(dataUrl) {
@@ -518,7 +566,10 @@ function serveStaticDir(dir, req, res) {
   try {
     const data = fs.readFileSync(filePath);
     const ext = path.extname(filePath).toLowerCase();
-    res.writeHead(200, { 'Content-Type': MIME[ext] || 'application/octet-stream' });
+    const headers = { 'Content-Type': MIME[ext] || 'application/octet-stream' };
+    // HTML 入口禁止缓存，避免页面改版后浏览器仍用旧版本（如按钮无响应）
+    if (ext === '.html') headers['Cache-Control'] = 'no-cache';
+    res.writeHead(200, headers);
     res.end(data);
     return true;
   } catch (e) {
@@ -668,13 +719,15 @@ function handleCommunityAPI(req, res) {
     return jsonOK(res, { tags });
   }
 
-  // POST /api/community/posts —— 发布新帖子（分享明信片）
+  // POST /api/community/posts —— 发布新帖子（分享明信片，需登录）
   if (req.method === 'POST' && url === '/api/community/posts') {
+    const authUser = getAuthUser(req);
+    if (!authUser) return jsonErr(res, 401, '请先登录后再发帖');
     return (async () => {
       try {
         const buf = await readBody(req, 20); // 图片可能较大
         const payload = JSON.parse(buf.toString('utf8'));
-        const author = (payload.author || '匿名用户').toString().slice(0, 30).trim() || '匿名用户';
+        const author = authUser; // 作者强制取登录用户名
         const title = (payload.title || '').toString().slice(0, 100).trim();
         const description = (payload.description || '').toString().slice(0, 500);
         const sentence = (payload.sentence || '').toString().slice(0, 300);
@@ -725,11 +778,12 @@ function handleCommunityAPI(req, res) {
   // POST /api/community/posts/:id/like —— 点赞/取消点赞
   const likeMatch = url.match(/^\/api\/community\/posts\/([^/]+)\/like$/);
   if (req.method === 'POST' && likeMatch) {
+    const authUser = getAuthUser(req);
+    if (!authUser) return jsonErr(res, 401, '请先登录后再点赞');
     return (async () => {
       try {
         const buf = await readBody(req, 1);
-        const payload = JSON.parse(buf.toString('utf8') || '{}');
-        const user = (payload.user || 'visitor').toString().slice(0, 30) || 'visitor';
+        const user = authUser; // 点赞人强制取登录用户名
         const postId = likeMatch[1];
         const db = loadDB();
         const post = db.posts.find(p => p.id === postId);
@@ -765,12 +819,14 @@ function handleCommunityAPI(req, res) {
   // POST /api/community/posts/:id/comments —— 发表评论
   const cmtPostMatch = url.match(/^\/api\/community\/posts\/([^/]+)\/comments$/);
   if (req.method === 'POST' && cmtPostMatch) {
+    const authUser = getAuthUser(req);
+    if (!authUser) return jsonErr(res, 401, '请先登录后再评论');
     return (async () => {
       try {
         const buf = await readBody(req, 2);
         const payload = JSON.parse(buf.toString('utf8'));
         const postId = cmtPostMatch[1];
-        const author = (payload.author || '匿名用户').toString().slice(0, 30).trim() || '匿名用户';
+        const author = authUser; // 评论者强制取登录用户名
         const content = (payload.content || '').toString().slice(0, 500).trim();
         if (!content) return jsonErr(res, 400, '评论内容不能为空');
         const db = loadDB();
@@ -831,7 +887,7 @@ function handleCommunityAPI(req, res) {
 const server = http.createServer(async (req, res) => {
   // 跨域（仅本地，方便调试）
   res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
   if (req.method === 'OPTIONS') { res.writeHead(204); res.end(); return; }
 
@@ -848,6 +904,70 @@ const server = http.createServer(async (req, res) => {
     } catch (e) { return jsonErr(res, 400, e.message); }
   }
   // #endregion
+
+  // ----- 认证 API -----
+  if (url.startsWith('/api/auth/')) {
+    // POST /api/auth/register —— 注册（成功即登录）
+    if (req.method === 'POST' && url === '/api/auth/register') {
+      try {
+        const buf = await readBody(req, 1);
+        const payload = JSON.parse(buf.toString('utf8') || '{}');
+        const username = (payload.username || '').toString().trim();
+        const password = (payload.password || '').toString();
+        if (!username || username.length > 20) return jsonErr(res, 400, '用户名需为 1-20 个字符');
+        if (/\s/.test(username)) return jsonErr(res, 400, '用户名不能包含空格');
+        if (password.length < 6) return jsonErr(res, 400, '密码至少 6 位');
+        const d = loadUsers();
+        if (d.users.some(u => u.username.toLowerCase() === username.toLowerCase())) {
+          return jsonErr(res, 409, '该用户名已被注册');
+        }
+        const salt = crypto.randomBytes(16).toString('hex');
+        d.users.push({ username, salt, hash: hashPassword(password, salt), createdAt: Date.now() });
+        saveUsers(d);
+        const token = createSession(username);
+        console.log('[auth] 新用户注册：' + username);
+        return jsonOK(res, { ok: true, token, username });
+      } catch (e) { return jsonErr(res, 500, '注册失败：' + e.message); }
+    }
+    // POST /api/auth/login —— 登录
+    if (req.method === 'POST' && url === '/api/auth/login') {
+      try {
+        const buf = await readBody(req, 1);
+        const payload = JSON.parse(buf.toString('utf8') || '{}');
+        const username = (payload.username || '').toString().trim();
+        const password = (payload.password || '').toString();
+        if (!username || !password) return jsonErr(res, 400, '请输入用户名和密码');
+        const d = loadUsers();
+        const u = d.users.find(x => x.username.toLowerCase() === username.toLowerCase());
+        if (!u) return jsonErr(res, 401, '用户名或密码错误');
+        const hash = Buffer.from(hashPassword(password, u.salt), 'hex');
+        const stored = Buffer.from(u.hash, 'hex');
+        if (hash.length !== stored.length || !crypto.timingSafeEqual(hash, stored)) {
+          return jsonErr(res, 401, '用户名或密码错误');
+        }
+        const token = createSession(u.username);
+        console.log('[auth] 用户登录：' + u.username);
+        return jsonOK(res, { ok: true, token, username: u.username });
+      } catch (e) { return jsonErr(res, 500, '登录失败：' + e.message); }
+    }
+    // POST /api/auth/logout —— 登出（销毁会话）
+    if (req.method === 'POST' && url === '/api/auth/logout') {
+      const m = /^Bearer\s+(.+)$/i.exec(req.headers['authorization'] || '');
+      if (m) {
+        const d = loadSessions();
+        delete d.sessions[m[1].trim()];
+        saveSessions(d);
+      }
+      return jsonOK(res, { ok: true });
+    }
+    // GET /api/auth/me —— 校验 token，返回当前登录用户
+    if (req.method === 'GET' && url === '/api/auth/me') {
+      const user = getAuthUser(req);
+      if (!user) return jsonErr(res, 401, '未登录');
+      return jsonOK(res, { username: user });
+    }
+    return jsonErr(res, 404, '未知认证接口');
+  }
 
   // ----- 社区 API -----
   if (url.startsWith('/api/community/')) {
@@ -1016,13 +1136,15 @@ const server = http.createServer(async (req, res) => {
   }
 
   // ---------- 寄送卡片 API（功能7）----------
-  // POST /api/cards —— 创建一张寄送明信片，返回专属邀请码与链接
+  // POST /api/cards —— 创建一张寄送明信片，返回专属邀请码与链接（需登录）
   if (req.method === 'POST' && url === '/api/cards') {
+    const authUser = getAuthUser(req);
+    if (!authUser) return jsonErr(res, 401, '请先登录后再寄送明信片');
     return (async () => {
       try {
         const buf = await readBody(req, 25);
         const payload = JSON.parse(buf.toString('utf8'));
-        const fromName = (payload.fromName || '匿名').toString().slice(0, 30).trim() || '匿名';
+        const fromName = (payload.fromName || '').toString().slice(0, 30).trim() || authUser;
         const toName = (payload.toName || '朋友').toString().slice(0, 30).trim() || '朋友';
         const message = (payload.message || '').toString().slice(0, 300);
         const imageDataUrl = payload.image || '';
@@ -1128,13 +1250,15 @@ const server = http.createServer(async (req, res) => {
   /* ============================================================
      功能1：我的作品
      ============================================================ */
-  // POST /api/myworks —— 保存作品（生成成功后前端调用）
+  // POST /api/myworks —— 保存作品（生成成功后前端调用，需登录）
   if (req.method === 'POST' && url === '/api/myworks') {
+    const authUser = getAuthUser(req);
+    if (!authUser) return jsonErr(res, 401, '请先登录后再保存作品');
     return (async () => {
       try {
         const buf = await readBody(req, 25);
         const payload = JSON.parse(buf.toString('utf8'));
-        const ownerNick = (payload.ownerNick || '匿名用户').toString().slice(0, 30).trim() || '匿名用户';
+        const ownerNick = authUser; // 作者强制取登录用户名
         const title = (payload.title || '').toString().slice(0, 100).trim();
         const sentence = (payload.sentence || '').toString().slice(0, 300);
         const imageDataUrl = payload.image || '';
@@ -1179,6 +1303,8 @@ const server = http.createServer(async (req, res) => {
   // POST /api/myworks/:id/update —— 更新可见性/标题
   const workUpdateMatch = url.match(/^\/api\/myworks\/([^/]+)\/update$/);
   if (req.method === 'POST' && workUpdateMatch) {
+    const authUser = getAuthUser(req);
+    if (!authUser) return jsonErr(res, 401, '请先登录');
     return (async () => {
       try {
         const buf = await readBody(req, 1);
@@ -1186,6 +1312,7 @@ const server = http.createServer(async (req, res) => {
         const d = loadMyWorks();
         const w = d.works.find(x => x.id === workUpdateMatch[1]);
         if (!w) return jsonErr(res, 404, '作品不存在');
+        if ((w.ownerNick || '').toLowerCase() !== authUser.toLowerCase()) return jsonErr(res, 403, '无权操作他人作品');
         if (payload.visibility === 'public' || payload.visibility === 'private') w.visibility = payload.visibility;
         if (typeof payload.title === 'string') w.title = payload.title.slice(0, 100).trim();
         if (Array.isArray(payload.animations)) w.animations = payload.animations.slice(0, 5);
@@ -1197,9 +1324,12 @@ const server = http.createServer(async (req, res) => {
   // POST /api/myworks/:id/delete —— 删除作品
   const workDeleteMatch = url.match(/^\/api\/myworks\/([^/]+)\/delete$/);
   if (req.method === 'POST' && workDeleteMatch) {
+    const authUser = getAuthUser(req);
+    if (!authUser) return jsonErr(res, 401, '请先登录');
     const d = loadMyWorks();
     const idx = d.works.findIndex(x => x.id === workDeleteMatch[1]);
     if (idx < 0) return jsonErr(res, 404, '作品不存在');
+    if ((d.works[idx].ownerNick || '').toLowerCase() !== authUser.toLowerCase()) return jsonErr(res, 403, '无权操作他人作品');
     d.works.splice(idx, 1);
     saveMyWorks(d);
     return jsonOK(res, { ok: true });
@@ -1207,6 +1337,8 @@ const server = http.createServer(async (req, res) => {
   // POST /api/myworks/:id/share —— 把作品分享到社区
   const workShareMatch = url.match(/^\/api\/myworks\/([^/]+)\/share$/);
   if (req.method === 'POST' && workShareMatch) {
+    const authUser = getAuthUser(req);
+    if (!authUser) return jsonErr(res, 401, '请先登录');
     return (async () => {
       try {
         const buf = await readBody(req, 5);
@@ -1214,10 +1346,11 @@ const server = http.createServer(async (req, res) => {
         const d = loadMyWorks();
         const w = d.works.find(x => x.id === workShareMatch[1]);
         if (!w) return jsonErr(res, 404, '作品不存在');
+        if ((w.ownerNick || '').toLowerCase() !== authUser.toLowerCase()) return jsonErr(res, 403, '无权操作他人作品');
         const db = loadDB();
         const post = {
           id: genId('post'),
-          author: w.ownerNick,
+          author: authUser,
           title: (payload.title || w.title || '').toString().slice(0, 100).trim(),
           description: (payload.description || '').toString().slice(0, 500),
           sentence: w.sentence,
@@ -1261,15 +1394,17 @@ const server = http.createServer(async (req, res) => {
   /* ============================================================
      功能7：关注
      ============================================================ */
-  // POST /api/follow —— 关注/取关（toggle）
+  // POST /api/follow —— 关注/取关（toggle，需登录）
   if (req.method === 'POST' && url === '/api/follow') {
+    const authUser = getAuthUser(req);
+    if (!authUser) return jsonErr(res, 401, '请先登录后再关注');
     return (async () => {
       try {
         const buf = await readBody(req, 1);
         const payload = JSON.parse(buf.toString('utf8'));
-        const follower = (payload.follower || '').toString().slice(0, 30).trim();
+        const follower = authUser; // 关注人强制取登录用户名
         const followee = (payload.followee || '').toString().slice(0, 30).trim();
-        if (!follower || !followee) return jsonErr(res, 400, '缺少 follower 或 followee');
+        if (!followee) return jsonErr(res, 400, '缺少 followee');
         if (follower === followee) return jsonErr(res, 400, '不能关注自己');
         const f = loadFollows();
         const idx = f.relations.findIndex(r => r.follower === follower && r.followee === followee);
