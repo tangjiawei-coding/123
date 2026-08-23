@@ -14,8 +14,6 @@ const DB_FILE = path.join(DATA_DIR, 'community.json');
 const CARDS_FILE = path.join(DATA_DIR, 'cards.json');
 const MYWORKS_FILE = path.join(DATA_DIR, 'myworks.json');
 const FOLLOWS_FILE = path.join(DATA_DIR, 'follows.json');
-const CHECKINS_FILE = path.join(DATA_DIR, 'checkins.json');
-const CHALLENGES_FILE = path.join(DATA_DIR, 'challenges.json');
 
 // 确保数据目录存在
 if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
@@ -24,8 +22,6 @@ if (!fs.existsSync(DB_FILE)) fs.writeFileSync(DB_FILE, JSON.stringify({ posts: [
 if (!fs.existsSync(CARDS_FILE)) fs.writeFileSync(CARDS_FILE, JSON.stringify({ cards: [] }, null, 2));
 if (!fs.existsSync(MYWORKS_FILE)) fs.writeFileSync(MYWORKS_FILE, JSON.stringify({ works: [] }, null, 2));
 if (!fs.existsSync(FOLLOWS_FILE)) fs.writeFileSync(FOLLOWS_FILE, JSON.stringify({ relations: [] }, null, 2));
-if (!fs.existsSync(CHECKINS_FILE)) fs.writeFileSync(CHECKINS_FILE, JSON.stringify({ records: [] }, null, 2));
-if (!fs.existsSync(CHALLENGES_FILE)) fs.writeFileSync(CHALLENGES_FILE, JSON.stringify({ challenges: [] }, null, 2));
 
 // ---------- 社区数据读写 ----------
 function loadDB() {
@@ -76,45 +72,6 @@ function loadFollows() {
   } catch (e) { console.error('[follows] 读取失败，重置为空', e.message); return { relations: [] }; }
 }
 function saveFollows(d) { fs.writeFileSync(FOLLOWS_FILE, JSON.stringify(d, null, 2)); }
-// 每日打卡读写
-function loadCheckins() {
-  try {
-    const d = JSON.parse(fs.readFileSync(CHECKINS_FILE, 'utf8'));
-    if (!d.records) d.records = [];
-    return d;
-  } catch (e) { console.error('[checkins] 读取失败，重置为空', e.message); return { records: [] }; }
-}
-function saveCheckins(d) { fs.writeFileSync(CHECKINS_FILE, JSON.stringify(d, null, 2)); }
-// 主题挑战读写
-function loadChallenges() {
-  try {
-    const d = JSON.parse(fs.readFileSync(CHALLENGES_FILE, 'utf8'));
-    if (!d.challenges) d.challenges = [];
-    return d;
-  } catch (e) { console.error('[challenges] 读取失败，重置为空', e.message); return { challenges: [] }; }
-}
-function saveChallenges(d) { fs.writeFileSync(CHALLENGES_FILE, JSON.stringify(d, null, 2)); }
-// 今日日期字符串 YYYY-MM-DD（本地时区，用于打卡去重与连续天数计算）
-function todayStr(ts) {
-  const d = ts ? new Date(ts) : new Date();
-  return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
-}
-// 计算打卡连续天数：传入已按日期升序排序的去重日期数组
-function calcStreak(dates) {
-  if (!dates.length) return 0;
-  const set = new Set(dates);
-  let streak = 0;
-  let cursor = new Date(); // 从今天往前数
-  // 如果今天没打，但昨天打了，仍从昨天开始数（容错：今天尚未打卡时也算连续）
-  if (!set.has(todayStr())) {
-    cursor.setDate(cursor.getDate() - 1);
-  }
-  while (set.has(todayStr(cursor.getTime()))) {
-    streak++;
-    cursor.setDate(cursor.getDate() - 1);
-  }
-  return streak;
-}
 function genId(prefix) {
   return prefix + '_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 8);
 }
@@ -476,6 +433,60 @@ async function generateSentence(imageDataUrl, userText, tone) {
   return lines.slice(0, 2).join('\n');
 }
 
+// ---------- 调用视觉模型：分析适合局部动效的区域 ----------
+async function analyzeMotionRegions(imageDataUrl) {
+  const systemMsg = `You are a motion art director for mobile postcards. Analyze the image and identify 1-5 visually meaningful regions that can be animated by reusing pixels from the same still image. Return JSON only, with this schema:
+{"regions":[{"name":"short Chinese name","type":"spin|swing|breathe|float","shape":"circle|rect","x":0.5,"y":0.5,"w":0.2,"h":0.2,"pivotX":0.5,"pivotY":0.5,"duration":1.5,"direction":1}]}
+All coordinates are normalized 0..1 relative to the original image. x/y MUST be the exact center of the visible moving object, not the center of the surrounding person, vehicle or scene. w/h MUST be the tight bounding box of only that object, including a small margin of at most 8% of its size. Do not use a broad box around an entire person, vehicle, background or nearby scene. pivotX/pivotY are the transform pivot in image coordinates and should be inside the moving object: for a wheel use its exact center; for an arm or wiping cloth use the shoulder/elbow or hand joint. Use spin only for circular objects such as wheels, fans or records; swing for a clearly visible arm, flag, branch or wiping cloth; breathe for a clearly isolated flower, light or small focal object; float for a clearly isolated cloud, steam or loose lightweight object. For a person wiping a vehicle, select the wiping arm or cloth rather than the whole person. Prefer 1-3 small isolated regions. Do not animate faces, readable text, or rigid objects without a plausible motion. Keep w and h between 0.02 and 0.30, duration between 0.6 and 5. Before returning, visually re-check every box against the image and remove any box that does not tightly cover a real moving object. Return {"regions":[]} when no convincing motion exists.`;
+  const body = JSON.stringify({
+    model: config.textModel,
+    messages: [
+      { role: 'system', content: systemMsg },
+      { role: 'user', content: [
+        { type: 'text', text: '请分析这张明信片成品，给出适合在手机端实时渲染的局部动效区域。' },
+        { type: 'image_url', image_url: { url: imageDataUrl } },
+      ] },
+    ],
+    temperature: 0.2,
+    response_format: { type: 'json_object' },
+  });
+  const apiRes = await httpsRequest('POST', config.baseUrl + '/chat/completions', {
+    Authorization: 'Bearer ' + config.apiKey,
+    'Content-Type': 'application/json',
+  }, Buffer.from(body, 'utf8'), 90000);
+  if (apiRes.statusCode !== 200) {
+    throw new Error('动态区域分析失败 HTTP ' + apiRes.statusCode + ': ' + apiRes.body.toString('utf8').slice(0, 300));
+  }
+  const envelope = JSON.parse(apiRes.body.toString('utf8'));
+  let content = envelope.choices && envelope.choices[0] && envelope.choices[0].message && envelope.choices[0].message.content;
+  if (Array.isArray(content)) content = content.map(v => v.text || '').join('');
+  const match = String(content || '').match(/\{[\s\S]*\}/);
+  if (!match) throw new Error('模型没有返回可解析的区域 JSON');
+  const parsed = JSON.parse(match[0]);
+  const allowedTypes = new Set(['spin', 'swing', 'breathe', 'float']);
+  const allowedShapes = new Set(['circle', 'rect']);
+  const clamp = (v, min, max) => Math.min(max, Math.max(min, Number(v)));
+  const regions = (Array.isArray(parsed.regions) ? parsed.regions : []).slice(0, 5).map((r, index) => {
+    const type = allowedTypes.has(r.type) ? r.type : 'breathe';
+    return {
+      id: 'motion_' + (index + 1),
+      name: String(r.name || ('动态区域 ' + (index + 1))).slice(0, 30),
+      type,
+      shape: allowedShapes.has(r.shape) ? r.shape : (type === 'spin' ? 'circle' : 'rect'),
+      x: clamp(r.x, 0.02, 0.98),
+      y: clamp(r.y, 0.02, 0.98),
+      w: clamp(r.w, 0.02, 0.30),
+      h: clamp(r.h, 0.02, 0.30),
+      pivotX: clamp(r.pivotX == null ? r.x : r.pivotX, 0, 1),
+      pivotY: clamp(r.pivotY == null ? r.y : r.pivotY, 0, 1),
+      duration: clamp(r.duration || 1.5, 0.6, 5),
+      direction: Number(r.direction) < 0 ? -1 : 1,
+      enabled: true,
+    };
+  }).filter(r => Number.isFinite(r.x) && Number.isFinite(r.y) && Number.isFinite(r.w) && Number.isFinite(r.h));
+  return regions;
+}
+
 // ---------- 静态文件服务 ----------
 const MIME = {
   '.html': 'text/html; charset=utf-8',
@@ -668,6 +679,11 @@ function handleCommunityAPI(req, res) {
         const description = (payload.description || '').toString().slice(0, 500);
         const sentence = (payload.sentence || '').toString().slice(0, 300);
         const imageDataUrl = payload.image || '';
+        const animations = Array.isArray(payload.animations) ? payload.animations.slice(0, 5) : [];
+        const stamp = (payload.stamp || '').toString().slice(0, 32);
+        const audio = payload.audio && typeof payload.audio.url === 'string' && payload.audio.url.length <= 14 * 1024 * 1024
+          ? { url: payload.audio.url, name: String(payload.audio.name || '声音').slice(0, 80), type: String(payload.audio.type || '').slice(0, 20) }
+          : null;
         if (!imageDataUrl) return jsonErr(res, 400, '缺少图片');
 
         // 如果是 dataURL 就保存到本地；如果是外部 URL 就直接记录
@@ -684,6 +700,8 @@ function handleCommunityAPI(req, res) {
           description,
           sentence,
           image: imageUrl,
+          animations,
+          stamp,
           likes: 0,
           likers: [],
           createdAt: Date.now(),
@@ -820,6 +838,17 @@ const server = http.createServer(async (req, res) => {
   const url = req.url.split('?')[0];
   console.log('[req]', req.method, url);
 
+  // #region debug-point D:same-origin-collector
+  if (req.method === 'POST' && url === '/api/debug-motion') {
+    try {
+      const buf = await readBody(req, 1);
+      const event = JSON.parse(buf.toString('utf8') || '{}');
+      fs.appendFileSync(path.join(__dirname, '.dbg', 'trae-debug-log-motion-not-playing.ndjson'), JSON.stringify(event) + '\n');
+      return jsonOK(res, { ok: true });
+    } catch (e) { return jsonErr(res, 400, e.message); }
+  }
+  // #endregion
+
   // ----- 社区 API -----
   if (url.startsWith('/api/community/')) {
     // 必须 await：POST 路由是异步的（需先 readBody），不 await 会在响应头发出前下落到 serveStatic 返回 404
@@ -909,6 +938,28 @@ const server = http.createServer(async (req, res) => {
     return;
   }
 
+  // AI 分析局部动效区域
+  if (req.method === 'POST' && url === '/api/analyze-motion') {
+    try {
+      const buf = await readBody(req, 25);
+      const payload = JSON.parse(buf.toString('utf8'));
+      const imageDataUrl = payload.image || '';
+      const validImage = /^data:image\/[a-zA-Z0-9.+-]+;base64,/i.test(imageDataUrl)
+        || /^https:\/\/[^\s]+$/i.test(imageDataUrl);
+      if (!validImage || imageDataUrl.length > 35 * 1024 * 1024) {
+        return jsonErr(res, 400, '图片地址格式不正确');
+      }
+      const regions = await withRetry(
+        () => analyzeMotionRegions(imageDataUrl),
+        2, 2000, '动态区域分析'
+      );
+      return jsonOK(res, { regions });
+    } catch (e) {
+      console.error('[analyze-motion] 错误:', e.message);
+      return jsonErr(res, 500, e.message || '动态区域分析失败');
+    }
+  }
+
   // 单独重抽图像（功能10）
   if (req.method === 'POST' && url === '/api/generate-image') {
     try {
@@ -976,6 +1027,10 @@ const server = http.createServer(async (req, res) => {
         const message = (payload.message || '').toString().slice(0, 300);
         const imageDataUrl = payload.image || '';
         const sentence = (payload.sentence || '').toString().slice(0, 300);
+        const animations = Array.isArray(payload.animations) ? payload.animations.slice(0, 5) : [];
+        const audio = payload.audio && typeof payload.audio.url === 'string' && payload.audio.url.length <= 14 * 1024 * 1024
+          ? { url: payload.audio.url, name: String(payload.audio.name || '声音').slice(0, 80), type: String(payload.audio.type || '').slice(0, 20) }
+          : null;
         if (!imageDataUrl) return jsonErr(res, 400, '缺少图片');
 
         // 把图片保存到本地（与社区共用目录）
@@ -994,6 +1049,9 @@ const server = http.createServer(async (req, res) => {
           message,
           sentence,
           image: imageUrl,
+          animations,
+          audio,
+          stamp,
           createdAt: Date.now(),
           opened: false,
           openedAt: null,
@@ -1082,6 +1140,7 @@ const server = http.createServer(async (req, res) => {
         const imageDataUrl = payload.image || '';
         const skill = (payload.skill || '').toString().slice(0, 60);
         const tone = (payload.tone || '').toString().slice(0, 30);
+        const animations = Array.isArray(payload.animations) ? payload.animations.slice(0, 5) : [];
         const visibility = payload.visibility === 'private' ? 'private' : 'public';
         if (!imageDataUrl) return jsonErr(res, 400, '缺少图片');
         let imageUrl = imageDataUrl;
@@ -1091,7 +1150,7 @@ const server = http.createServer(async (req, res) => {
         }
         const work = {
           id: genId('work'),
-          ownerNick, title, sentence, image: imageUrl, skill, tone, visibility,
+          ownerNick, title, sentence, image: imageUrl, animations, skill, tone, visibility,
           postId: null,
           createdAt: Date.now(),
         };
@@ -1129,6 +1188,7 @@ const server = http.createServer(async (req, res) => {
         if (!w) return jsonErr(res, 404, '作品不存在');
         if (payload.visibility === 'public' || payload.visibility === 'private') w.visibility = payload.visibility;
         if (typeof payload.title === 'string') w.title = payload.title.slice(0, 100).trim();
+        if (Array.isArray(payload.animations)) w.animations = payload.animations.slice(0, 5);
         saveMyWorks(d);
         return jsonOK(res, { ok: true, work: w });
       } catch (e) { return jsonErr(res, 500, '更新失败：' + e.message); }
@@ -1162,6 +1222,7 @@ const server = http.createServer(async (req, res) => {
           description: (payload.description || '').toString().slice(0, 500),
           sentence: w.sentence,
           image: w.image,
+          animations: Array.isArray(w.animations) ? w.animations.slice(0, 5) : [],
           likes: 0, likers: [],
           createdAt: Date.now(),
           featured: false, featuredAt: null, featuredNote: '',
@@ -1233,124 +1294,6 @@ const server = http.createServer(async (req, res) => {
       .filter(r => (r.followee || '').toLowerCase() === nick)
       .map(r => r.follower);
     return jsonOK(res, { following: followees, followingCount: followees.length, followers, followersCount: followers.length });
-  }
-
-  /* ============================================================
-     功能8：每日打卡
-     ============================================================ */
-  // POST /api/checkin —— 每日打卡（每个 nick 每日仅一次）
-  if (req.method === 'POST' && url === '/api/checkin') {
-    return (async () => {
-      try {
-        const buf = await readBody(req, 25);
-        const payload = JSON.parse(buf.toString('utf8'));
-        const nick = (payload.nick || '匿名用户').toString().slice(0, 30).trim() || '匿名用户';
-        const imageDataUrl = payload.image || '';
-        const sentence = (payload.sentence || '').toString().slice(0, 300);
-        const note = (payload.note || '').toString().slice(0, 300);
-        if (!imageDataUrl) return jsonErr(res, 400, '缺少图片');
-        const today = todayStr();
-        const d = loadCheckins();
-        // 去重：同 nick 同日期已有记录则拒绝
-        const dup = d.records.find(r => (r.nick || '').toLowerCase() === nick.toLowerCase() && r.date === today);
-        if (dup) return jsonErr(res, 409, '今天已经打过卡啦，明天再来～');
-        let imageUrl = imageDataUrl;
-        if (imageDataUrl.startsWith('data:image/')) {
-          const imgId = saveImageFromDataUrl(imageDataUrl);
-          imageUrl = '/community_img/' + imgId;
-        }
-        const rec = {
-          id: genId('ckin'),
-          nick, date: today, image: imageUrl, sentence, note,
-          createdAt: Date.now(),
-        };
-        d.records.push(rec);
-        saveCheckins(d);
-        console.log('[checkin] ' + nick + ' 打卡 ' + today);
-        // 返回连续天数
-        const myDates = d.records
-          .filter(r => (r.nick || '').toLowerCase() === nick.toLowerCase())
-          .map(r => r.date)
-          .filter((v, i, a) => a.indexOf(v) === i)
-          .sort();
-        return jsonOK(res, { ok: true, record: rec, streak: calcStreak(myDates) });
-      } catch (e) { return jsonErr(res, 500, '打卡失败：' + e.message); }
-    })();
-  }
-  // GET /api/checkins/:nick —— 该用户的打卡记录 + 连续天数
-  const checkinMatch = url.match(/^\/api\/checkins\/([^/]+)$/);
-  if (req.method === 'GET' && checkinMatch) {
-    const nick = decodeURIComponent(checkinMatch[1]).toLowerCase();
-    const d = loadCheckins();
-    const mine = d.records
-      .filter(r => (r.nick || '').toLowerCase() === nick)
-      .sort((a, b) => b.createdAt - a.createdAt);
-    const myDates = mine.map(r => r.date).filter((v, i, a) => a.indexOf(v) === i).sort();
-    return jsonOK(res, { records: mine, total: mine.length, streak: calcStreak(myDates), todayChecked: myDates.includes(todayStr()) });
-  }
-
-  /* ============================================================
-     功能4：主题挑战
-     ============================================================ */
-  // GET /api/challenges —— 列出所有挑战
-  if (req.method === 'GET' && url === '/api/challenges') {
-    const d = loadChallenges();
-    const db = loadDB();
-    const list = d.challenges
-      .map(c => {
-        const participants = db.posts.filter(p => p.challengeId === c.id).map(p => p.author);
-        const uniqueAuthors = [...new Set(participants)];
-        const posts = db.posts.filter(p => p.challengeId === c.id).sort((a, b) => b.createdAt - a.createdAt);
-        return { ...c, participantCount: uniqueAuthors.length, posts };
-      })
-      .sort((a, b) => b.createdAt - a.createdAt);
-    return jsonOK(res, { challenges: list, total: list.length });
-  }
-  // POST /api/challenges —— 创建新挑战（简单密码鉴权，密码存 config.json）
-  if (req.method === 'POST' && url === '/api/challenges') {
-    return (async () => {
-      try {
-        const buf = await readBody(req, 5);
-        const payload = JSON.parse(buf.toString('utf8'));
-        const pwd = (payload.password || '').toString();
-        if (pwd !== (config.adminPassword || '')) return jsonErr(res, 403, '管理员密码错误');
-        const title = (payload.title || '').toString().slice(0, 80).trim();
-        const desc = (payload.description || '').toString().slice(0, 500);
-        const prompt = (payload.prompt || '').toString().slice(0, 500);
-        const deadline = payload.deadline ? Number(payload.deadline) : null;
-        if (!title) return jsonErr(res, 400, '标题不能为空');
-        const c = {
-          id: genId('chl'),
-          title, description: desc, prompt,
-          createdAt: Date.now(),
-          deadline,
-        };
-        const d = loadChallenges();
-        d.challenges.push(c);
-        saveChallenges(d);
-        console.log('[challenge] 新挑战：' + c.id + ' ' + title);
-        return jsonOK(res, { ok: true, challenge: c });
-      } catch (e) { return jsonErr(res, 500, '创建挑战失败：' + e.message); }
-    })();
-  }
-  // POST /api/challenges/:id/join —— 参与挑战（仅记录意向，发帖时传 challengeId 才算真正参与）
-  const challengeJoinMatch = url.match(/^\/api\/challenges\/([^/]+)\/join$/);
-  if (req.method === 'POST' && challengeJoinMatch) {
-    return (async () => {
-      try {
-        const buf = await readBody(req, 1);
-        const payload = JSON.parse(buf.toString('utf8') || '{}');
-        const nick = (payload.nick || '').toString().slice(0, 30).trim();
-        if (!nick) return jsonErr(res, 400, '缺少 nick');
-        const d = loadChallenges();
-        const c = d.challenges.find(x => x.id === challengeJoinMatch[1]);
-        if (!c) return jsonErr(res, 404, '挑战不存在');
-        if (!Array.isArray(c.participants)) c.participants = [];
-        if (!c.participants.includes(nick)) c.participants.push(nick);
-        saveChallenges(d);
-        return jsonOK(res, { ok: true, challenge: c });
-      } catch (e) { return jsonErr(res, 500, '参与失败：' + e.message); }
-    })();
   }
 
   /* ============================================================
