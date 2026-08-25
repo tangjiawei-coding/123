@@ -6,6 +6,8 @@ const path = require('path');
 const crypto = require('crypto');
 const { exec } = require('child_process');
 const config = require('./config.json');
+// 优先从环境变量读取上游 API 密钥，避免明文写入 config.json
+config.apiKey = process.env.POSTCARD_API_KEY || config.apiKey || '';
 
 const PORT = Number(process.env.PORT) || config.port || 5123;
 const PUBLIC_DIR = path.join(__dirname, 'public');
