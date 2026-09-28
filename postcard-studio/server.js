@@ -193,9 +193,9 @@ function postForViewer(post, db, viewer) {
     liked: (post.likers || []).includes(viewer), collected: (current?.favorites || []).includes(post.id) };
 }
 
-// ---------- 6 个 Codex skill 注册表 ----------
+// ---------- 6 个随项目部署的画风 skill 注册表 ----------
 // 每个 skill 的提示词文件运行时读取进内存；读取失败只记录不崩，其他 skill 仍可用
-const SKILLS_ROOT = path.join(require('os').homedir(), '.codex', 'skills');
+const SKILLS_ROOT = path.join(__dirname, 'skills');
 const SKILLS = [
   {
     id: 'photo-abstract-editorial',
