@@ -8,10 +8,11 @@ const { exec } = require('child_process');
 const config = require('./config.json');
 // 优先从环境变量读取上游 API 密钥，避免明文写入 config.json
 config.apiKey = process.env.POSTCARD_API_KEY || config.apiKey || '';
+config.baseUrl = process.env.POSTCARD_API_BASE_URL || config.baseUrl;
 
 const PORT = Number(process.env.PORT) || config.port || 5123;
 const PUBLIC_DIR = path.join(__dirname, 'public');
-const DATA_DIR = path.join(__dirname, 'data');
+const DATA_DIR = process.env.POSTCARD_DATA_DIR || path.join(__dirname, 'data');
 const IMG_DIR = path.join(DATA_DIR, 'community_images');
 const DB_FILE = path.join(DATA_DIR, 'community.json');
 const CARDS_FILE = path.join(DATA_DIR, 'cards.json');
@@ -84,7 +85,7 @@ function genId(prefix) {
 }
 // 生成短邀请码（用于寄送链接，比完整 id 更友好）
 function genInviteCode() {
-  return 'pc' + Date.now().toString(36).slice(-4) + Math.random().toString(36).slice(2, 6);
+  return 'pc' + crypto.randomBytes(16).toString('hex');
 }
 
 // ---------- 用户与会话 ----------
@@ -139,6 +140,57 @@ function saveImageFromDataUrl(dataUrl) {
   const buf = Buffer.from(m[2], 'base64');
   fs.writeFileSync(path.join(IMG_DIR, id), buf);
   return id;
+}
+
+// 每个入口都保存同一份卡片内容，原图、笔迹和声音不随发布方式丢失。
+function cardContent(payload, previous = {}) {
+  const value = { ...previous, ...payload };
+  const image = source => {
+    if (!source) return '';
+    if (typeof source !== 'string') throw new Error('图片格式不正确');
+    if (source.startsWith('data:image/')) return '/community_img/' + saveImageFromDataUrl(source);
+    if (/^https?:\/\//.test(source) || /^\/community_img\/[\w.-]+$/.test(source)) return source;
+    throw new Error('图片地址不正确');
+  };
+  if (!value.image) throw new Error('缺少图片');
+  const sound = audio => {
+    if (!audio) return null;
+    if (typeof audio.url !== 'string' || audio.url.length > 14 * 1024 * 1024 ||
+      !/^(data:audio\/|https?:\/\/|\/community_img\/)/.test(audio.url)) throw new Error('音频格式不正确或超过 10MB');
+    return { url: audio.url, name: String(audio.name || '我的声音').slice(0, 80), type: String(audio.type || '').slice(0, 80), duration: Number(audio.duration) || 0 };
+  };
+  const editor = value.editor?.version === 1 ? value.editor : {};
+  const bounded = (number, fallback) => Number.isFinite(number) ? Math.max(0, Math.min(1, number)) : fallback;
+  const ink = editor.ink;
+  return {
+    image: image(value.image), originalImage: image(value.originalImage),
+    handwriting: image(value.handwriting), sentence: String(value.sentence || '').slice(0, 1000),
+    stamp: String(value.stamp || '').slice(0, 32),
+    audio: sound(value.audio), backgroundAudio: sound(value.backgroundAudio),
+    editor: {
+      version: 1, font: ['hand', 'serif', 'script'].includes(editor.font) ? editor.font : 'hand',
+      bilingual: !!editor.bilingual, stylized: editor.stylized !== false,
+      stampColor: ['brown', 'red', 'blue'].includes(editor.stampColor) ? editor.stampColor : 'brown',
+      createdAt: Number.isFinite(Date.parse(editor.createdAt)) ? editor.createdAt : new Date().toISOString(),
+      ink: ink ? { x: bounded(ink.x, .57), y: bounded(ink.y, .69), w: bounded(ink.w, .28), h: bounded(ink.h, .22),
+        strokes: Array.isArray(ink.strokes) ? ink.strokes.slice(0, 1000).filter(Array.isArray).map(stroke => stroke.slice(0, 10000).filter(point => Array.isArray(point) && point.length === 2 && point.every(Number.isFinite))) : [] } : null,
+    },
+    skill: String(value.skill || '').slice(0, 60), tone: String(value.tone || '').slice(0, 30),
+  };
+}
+
+function profileFor(user) {
+  return { username: user.username, nickname: user.profile?.nickname || user.username,
+    bio: user.profile?.bio || '', email: user.profile?.email || '', signature: user.profile?.signature || '',
+    preferences: { font: 'hand', bilingual: false, tone: 'poetic', ...user.profile?.preferences } };
+}
+function postForViewer(post, db, viewer) {
+  const users = loadUsers().users;
+  const author = users.find(user => user.username === post.author);
+  const current = users.find(user => user.username === viewer);
+  return { ...post, authorName: author?.profile?.nickname || post.author,
+    authorBio: author?.profile?.bio || '', commentCount: db.comments.filter(comment => comment.postId === post.id).length,
+    liked: (post.likers || []).includes(viewer), collected: (current?.favorites || []).includes(post.id) };
 }
 
 // ---------- 6 个 Codex skill 注册表 ----------
@@ -237,11 +289,12 @@ function httpsRequest(method, urlStr, headers, bodyBuffer, timeoutMs) {
     const options = {
       method,
       hostname: u.hostname,
+      port: u.port || undefined,
       path: u.pathname + u.search,
       headers: headers || {},
       timeout: t,
     };
-    const req = https.request(options, (res) => {
+    const req = (u.protocol === 'http:' ? http : https).request(options, (res) => {
       const chunks = [];
       res.on('data', (c) => chunks.push(c));
       res.on('end', () => {
@@ -418,19 +471,21 @@ const TONES = {
 // ---------- 调用多模态文本 API：结合照片与用户文字，生成中英双语句子 ----------
 // tone: poetic|healing|sassy|love|travel|literary
 // 返回格式：单字符串，中文句 + "\n" + 英文句
-async function generateSentence(imageDataUrl, userText, tone) {
+async function generateSentence(imageDataUrl, userText, tone, bilingual = true) {
   const hasText = userText && userText.trim();
   const toneKey = TONES[tone] ? tone : 'poetic';
   const toneDef = TONES[toneKey];
 
-  const systemMsg = toneDef.system
+  const systemMsg = bilingual ? toneDef.system
     + ' Output format: <Chinese sentence> then a single newline then <English sentence>. '
     + 'Do not add quotation marks, labels, "中文:"/"English:" prefixes, explanations, or any other text. '
-    + 'Only the two sentences separated by one newline.';
+    + 'Only the two sentences separated by one newline.'
+    : '你是一位明信片文案作者。根据照片与用户的话，写一句简短自然的中文留言，语气为「'
+      + toneDef.label + '」。只返回中文留言，不要英文、标题、引号或解释，最多 35 个字。';
 
   const userPrompt = hasText
-    ? '用户对这张照片的描述（请据此调整两句的情感基调，但两句须分属中英两种语言）：' + userText.trim()
-    : '（用户未提供描述，请仅依据照片本身生成中英两句）';
+    ? '用户对这张照片的描述：' + userText.trim()
+    : '请依据照片本身生成留言。';
 
   const body = JSON.stringify({
     model: config.textModel,
@@ -480,61 +535,7 @@ async function generateSentence(imageDataUrl, userText, tone) {
     .filter(Boolean);
   if (lines.length === 0) throw new Error('【哲理文案生成失败】解析后文本为空');
   // 仅取前两行（防止模型多写），少于两行也能容忍
-  return lines.slice(0, 2).join('\n');
-}
-
-// ---------- 调用视觉模型：分析适合局部动效的区域 ----------
-async function analyzeMotionRegions(imageDataUrl) {
-  const systemMsg = `You are a motion art director for mobile postcards. Analyze the image and identify 1-5 visually meaningful regions that can be animated by reusing pixels from the same still image. Return JSON only, with this schema:
-{"regions":[{"name":"short Chinese name","type":"spin|swing|breathe|float","shape":"circle|rect","x":0.5,"y":0.5,"w":0.2,"h":0.2,"pivotX":0.5,"pivotY":0.5,"duration":1.5,"direction":1}]}
-All coordinates are normalized 0..1 relative to the original image. x/y MUST be the exact center of the visible moving object, not the center of the surrounding person, vehicle or scene. w/h MUST be the tight bounding box of only that object, including a small margin of at most 8% of its size. Do not use a broad box around an entire person, vehicle, background or nearby scene. pivotX/pivotY are the transform pivot in image coordinates and should be inside the moving object: for a wheel use its exact center; for an arm or wiping cloth use the shoulder/elbow or hand joint. Use spin only for circular objects such as wheels, fans or records; swing for a clearly visible arm, flag, branch or wiping cloth; breathe for a clearly isolated flower, light or small focal object; float for a clearly isolated cloud, steam or loose lightweight object. For a person wiping a vehicle, select the wiping arm or cloth rather than the whole person. Prefer 1-3 small isolated regions. Do not animate faces, readable text, or rigid objects without a plausible motion. Keep w and h between 0.02 and 0.30, duration between 0.6 and 5. Before returning, visually re-check every box against the image and remove any box that does not tightly cover a real moving object. Return {"regions":[]} when no convincing motion exists.`;
-  const body = JSON.stringify({
-    model: config.textModel,
-    messages: [
-      { role: 'system', content: systemMsg },
-      { role: 'user', content: [
-        { type: 'text', text: '请分析这张明信片成品，给出适合在手机端实时渲染的局部动效区域。' },
-        { type: 'image_url', image_url: { url: imageDataUrl } },
-      ] },
-    ],
-    temperature: 0.2,
-    response_format: { type: 'json_object' },
-  });
-  const apiRes = await httpsRequest('POST', config.baseUrl + '/chat/completions', {
-    Authorization: 'Bearer ' + config.apiKey,
-    'Content-Type': 'application/json',
-  }, Buffer.from(body, 'utf8'), 90000);
-  if (apiRes.statusCode !== 200) {
-    throw new Error('动态区域分析失败 HTTP ' + apiRes.statusCode + ': ' + apiRes.body.toString('utf8').slice(0, 300));
-  }
-  const envelope = JSON.parse(apiRes.body.toString('utf8'));
-  let content = envelope.choices && envelope.choices[0] && envelope.choices[0].message && envelope.choices[0].message.content;
-  if (Array.isArray(content)) content = content.map(v => v.text || '').join('');
-  const match = String(content || '').match(/\{[\s\S]*\}/);
-  if (!match) throw new Error('模型没有返回可解析的区域 JSON');
-  const parsed = JSON.parse(match[0]);
-  const allowedTypes = new Set(['spin', 'swing', 'breathe', 'float']);
-  const allowedShapes = new Set(['circle', 'rect']);
-  const clamp = (v, min, max) => Math.min(max, Math.max(min, Number(v)));
-  const regions = (Array.isArray(parsed.regions) ? parsed.regions : []).slice(0, 5).map((r, index) => {
-    const type = allowedTypes.has(r.type) ? r.type : 'breathe';
-    return {
-      id: 'motion_' + (index + 1),
-      name: String(r.name || ('动态区域 ' + (index + 1))).slice(0, 30),
-      type,
-      shape: allowedShapes.has(r.shape) ? r.shape : (type === 'spin' ? 'circle' : 'rect'),
-      x: clamp(r.x, 0.02, 0.98),
-      y: clamp(r.y, 0.02, 0.98),
-      w: clamp(r.w, 0.02, 0.30),
-      h: clamp(r.h, 0.02, 0.30),
-      pivotX: clamp(r.pivotX == null ? r.x : r.pivotX, 0, 1),
-      pivotY: clamp(r.pivotY == null ? r.y : r.pivotY, 0, 1),
-      duration: clamp(r.duration || 1.5, 0.6, 5),
-      direction: Number(r.direction) < 0 ? -1 : 1,
-      enabled: true,
-    };
-  }).filter(r => Number.isFinite(r.x) && Number.isFinite(r.y) && Number.isFinite(r.w) && Number.isFinite(r.h));
-  return regions;
+  return lines.slice(0, bilingual ? 2 : 1).join('\n');
 }
 
 // ---------- 静态文件服务 ----------
@@ -634,6 +635,36 @@ function jsonErr(res, status, msg) {
 function handleCommunityAPI(req, res) {
   const url = req.url.split('?')[0];
 
+  if (req.method === 'GET' && url === '/api/community/favorites') {
+    const username = getAuthUser(req);
+    if (!username) return jsonErr(res, 401, '请先登录后查看收藏');
+    const ids = loadUsers().users.find(user => user.username === username)?.favorites || [];
+    const db = loadDB();
+    return jsonOK(res, { posts: ids.slice().reverse().map(id => db.posts.find(post => post.id === id && !post.hidden)).filter(Boolean).map(post => postForViewer(post, db, username)) });
+  }
+  const favoriteMatch = url.match(/^\/api\/community\/posts\/([^/]+)\/favorite$/);
+  if (req.method === 'POST' && favoriteMatch) {
+    const username = getAuthUser(req);
+    if (!username) return jsonErr(res, 401, '请先登录后收藏');
+    const db = loadDB();
+    if (!db.posts.some(post => post.id === favoriteMatch[1] && !post.hidden)) return jsonErr(res, 404, '作品已转为私有或不存在');
+    const users = loadUsers();
+    const user = users.users.find(user => user.username === username);
+    if (!user) return jsonErr(res, 401, '请重新登录');
+    user.favorites ||= [];
+    const index = user.favorites.indexOf(favoriteMatch[1]);
+    if (index >= 0) user.favorites.splice(index, 1); else user.favorites.push(favoriteMatch[1]);
+    saveUsers(users);
+    return jsonOK(res, { collected: index < 0 });
+  }
+  const detailMatch = url.match(/^\/api\/community\/posts\/([^/]+)$/);
+  if (req.method === 'GET' && detailMatch) {
+    const db = loadDB();
+    const post = db.posts.find(post => post.id === detailMatch[1] && !post.hidden);
+    if (!post) return jsonErr(res, 404, '作品已转为私有或不存在');
+    return jsonOK(res, { post: postForViewer(post, db, getAuthUser(req)) });
+  }
+
   // GET /api/community/posts —— 获取帖子列表（带分页、评论数统计、筛选、排序）
   // 参数：page, pageSize, sort=new|hot|week, tag=关键词, author=作者名
   if (req.method === 'GET' && url === '/api/community/posts') {
@@ -647,7 +678,7 @@ function handleCommunityAPI(req, res) {
     const start = (page - 1) * pageSize;
 
     // 先过滤
-    let filtered = [...db.posts];
+    let filtered = db.posts.filter(post => !post.hidden);
     if (author) {
       filtered = filtered.filter(p => (p.author || '').toLowerCase() === author);
     }
@@ -674,10 +705,7 @@ function handleCommunityAPI(req, res) {
       filtered.sort((a, b) => b.createdAt - a.createdAt);
     }
     const total = filtered.length;
-    const pagePosts = filtered.slice(start, start + pageSize).map(p => ({
-      ...p,
-      commentCount: cmtCount(p.id),
-    }));
+    const pagePosts = filtered.slice(start, start + pageSize).map(p => postForViewer(p, db, getAuthUser(req)));
     return jsonOK(res, { posts: pagePosts, total, page, pageSize });
   }
 
@@ -686,7 +714,7 @@ function handleCommunityAPI(req, res) {
   if (req.method === 'GET' && authorMatch) {
     const authorName = decodeURIComponent(authorMatch[1]);
     const db = loadDB();
-    const posts = db.posts.filter(p => (p.author || '').toLowerCase() === authorName.toLowerCase());
+    const posts = db.posts.filter(p => !p.hidden && (p.author || '').toLowerCase() === authorName.toLowerCase());
     if (posts.length === 0) return jsonOK(res, { author: authorName, posts: [], totalLikes: 0, totalComments: 0 });
     const totalLikes = posts.reduce((s, p) => s + (p.likes || 0), 0);
     const postIds = new Set(posts.map(p => p.id));
@@ -708,7 +736,7 @@ function handleCommunityAPI(req, res) {
     const db = loadDB();
     // 简单分词：按空格/标点切，取长度≥2 的词，统计频次
     const freq = {};
-    db.posts.forEach(p => {
+    db.posts.filter(p => !p.hidden).forEach(p => {
       const text = ((p.title || '') + ' ' + (p.description || '')).toLowerCase();
       const words = text.split(/[\s，。、！？,.\?!;:；：""''""()（）\-—…]+/).filter(w => w.length >= 2);
       words.forEach(w => { freq[w] = (freq[w] || 0) + 1; });
@@ -727,36 +755,18 @@ function handleCommunityAPI(req, res) {
     if (!authUser) return jsonErr(res, 401, '请先登录后再发帖');
     return (async () => {
       try {
-        const buf = await readBody(req, 20); // 图片可能较大
+        const buf = await readBody(req, 80); // 图片可能较大
         const payload = JSON.parse(buf.toString('utf8'));
         const author = authUser; // 作者强制取登录用户名
         const title = (payload.title || '').toString().slice(0, 100).trim();
         const description = (payload.description || '').toString().slice(0, 500);
-        const sentence = (payload.sentence || '').toString().slice(0, 300);
-        const imageDataUrl = payload.image || '';
-        const animations = Array.isArray(payload.animations) ? payload.animations.slice(0, 5) : [];
-        const stamp = (payload.stamp || '').toString().slice(0, 32);
-        const audio = payload.audio && typeof payload.audio.url === 'string' && payload.audio.url.length <= 14 * 1024 * 1024
-          ? { url: payload.audio.url, name: String(payload.audio.name || '声音').slice(0, 80), type: String(payload.audio.type || '').slice(0, 20) }
-          : null;
-        if (!imageDataUrl) return jsonErr(res, 400, '缺少图片');
-
-        // 如果是 dataURL 就保存到本地；如果是外部 URL 就直接记录
-        let imageUrl = imageDataUrl;
-        if (imageDataUrl.startsWith('data:image/')) {
-          const imgId = saveImageFromDataUrl(imageDataUrl);
-          imageUrl = '/community_img/' + imgId;
-        }
-
+        const content = cardContent(payload);
         const post = {
           id: genId('post'),
           author,
           title,
           description,
-          sentence,
-          image: imageUrl,
-          animations,
-          stamp,
+          ...content,
           likes: 0,
           likers: [],
           createdAt: Date.now(),
@@ -788,7 +798,7 @@ function handleCommunityAPI(req, res) {
         const user = authUser; // 点赞人强制取登录用户名
         const postId = likeMatch[1];
         const db = loadDB();
-        const post = db.posts.find(p => p.id === postId);
+        const post = db.posts.find(p => p.id === postId && !p.hidden);
         if (!post) return jsonErr(res, 404, '帖子不存在');
         if (!Array.isArray(post.likers)) post.likers = [];
         const idx = post.likers.indexOf(user);
@@ -812,6 +822,7 @@ function handleCommunityAPI(req, res) {
   if (req.method === 'GET' && cmtGetMatch) {
     const postId = cmtGetMatch[1];
     const db = loadDB();
+    if (!db.posts.some(p => p.id === postId && !p.hidden)) return jsonErr(res, 404, '作品已转为私有或不存在');
     const comments = db.comments
       .filter(c => c.postId === postId)
       .sort((a, b) => a.createdAt - b.createdAt);
@@ -832,7 +843,7 @@ function handleCommunityAPI(req, res) {
         const content = (payload.content || '').toString().slice(0, 500).trim();
         if (!content) return jsonErr(res, 400, '评论内容不能为空');
         const db = loadDB();
-        const post = db.posts.find(p => p.id === postId);
+        const post = db.posts.find(p => p.id === postId && !p.hidden);
         if (!post) return jsonErr(res, 404, '帖子不存在');
         const comment = {
           id: genId('cmt'),
@@ -855,7 +866,7 @@ function handleCommunityAPI(req, res) {
   if (req.method === 'GET' && url === '/api/community/featured') {
     const db = loadDB();
     const cmtCount = pid => db.comments.filter(c => c.postId === pid).length;
-    const featured = db.posts
+    const featured = db.posts.filter(p => !p.hidden)
       .filter(p => p.featured === true)
       .sort((a, b) => (b.featuredAt || 0) - (a.featuredAt || 0))
       .map(p => ({ ...p, commentCount: cmtCount(p.id) }));
@@ -875,7 +886,7 @@ function handleCommunityAPI(req, res) {
     const db = loadDB();
     const cmtCount = pid => db.comments.filter(c => c.postId === pid).length;
     const posts = db.posts
-      .filter(p => followees.includes((p.author || '').toLowerCase()))
+      .filter(p => !p.hidden && followees.includes((p.author || '').toLowerCase()))
       .sort((a, b) => b.createdAt - a.createdAt)
       .slice(0, 50)
       .map(p => ({ ...p, commentCount: cmtCount(p.id) }));
@@ -886,6 +897,7 @@ function handleCommunityAPI(req, res) {
 }
 
 // ---------- 主服务 ----------
+const delivery = require('./delivery')({ getAuthUser, readBody, jsonOK, jsonErr, loadCards, saveCards, cardContent, saveImageFromDataUrl, httpsRequest });
 const server = http.createServer(async (req, res) => {
   // 跨域（仅本地，方便调试）
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -895,20 +907,36 @@ const server = http.createServer(async (req, res) => {
 
   const url = req.url.split('?')[0];
   console.log('[req]', req.method, url);
-
-  // #region debug-point D:same-origin-collector
-  if (req.method === 'POST' && url === '/api/debug-motion') {
-    try {
-      const buf = await readBody(req, 1);
-      const event = JSON.parse(buf.toString('utf8') || '{}');
-      fs.appendFileSync(path.join(__dirname, '.dbg', 'trae-debug-log-motion-not-playing.ndjson'), JSON.stringify(event) + '\n');
-      return jsonOK(res, { ok: true });
-    } catch (e) { return jsonErr(res, 400, e.message); }
-  }
-  // #endregion
+  if (await delivery.handle(req, res)) return;
 
   // ----- 认证 API -----
   if (url.startsWith('/api/auth/')) {
+    if (url === '/api/auth/profile' && ['GET', 'POST'].includes(req.method)) {
+      const username = getAuthUser(req);
+      if (!username) return jsonErr(res, 401, '请先登录');
+      try {
+        // 先收完请求体，再读取最新数据，避免覆盖同时发生的收藏操作。
+        const payload = req.method === 'POST' ? JSON.parse((await readBody(req, 1)).toString('utf8')) : null;
+        const users = loadUsers();
+        const user = users.users.find(user => user.username === username);
+        if (!user) return jsonErr(res, 401, '请重新登录');
+        if (payload) {
+          const profile = profileFor(user);
+          for (const [field, limit] of [['nickname', 20], ['bio', 100], ['email', 120], ['signature', 30]]) {
+            if (typeof payload[field] === 'string') profile[field] = payload[field].trim().slice(0, limit);
+          }
+          if (profile.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(profile.email)) return jsonErr(res, 400, '请输入正确的邮箱地址');
+          if (payload.preferences) {
+            const preferences = payload.preferences;
+            if (['hand', 'serif', 'script'].includes(preferences.font)) profile.preferences.font = preferences.font;
+            if (typeof preferences.bilingual === 'boolean') profile.preferences.bilingual = preferences.bilingual;
+            if (TONES[preferences.tone]) profile.preferences.tone = preferences.tone;
+          }
+          user.profile = profile; saveUsers(users);
+        }
+        return jsonOK(res, { profile: profileFor(user) });
+      } catch (error) { return jsonErr(res, 400, '资料保存失败：' + error.message); }
+    }
     // POST /api/auth/register —— 注册（成功即登录）
     if (req.method === 'POST' && url === '/api/auth/register') {
       try {
@@ -979,6 +1007,10 @@ const server = http.createServer(async (req, res) => {
   }
 
   // 生成接口（部分成功也返回，前端可单独重抽失败的项）
+  if (req.method === 'POST' && ['/api/generate', '/api/generate-image', '/api/generate-sentence'].includes(url) && !config.apiKey) {
+    return jsonErr(res, 503, 'AI 服务尚未配置，暂时无法生成画面或文字建议');
+  }
+
   if (req.method === 'POST' && url === '/api/generate') {
     try {
       const buf = await readBody(req, 25);
@@ -1060,28 +1092,6 @@ const server = http.createServer(async (req, res) => {
     return;
   }
 
-  // AI 分析局部动效区域
-  if (req.method === 'POST' && url === '/api/analyze-motion') {
-    try {
-      const buf = await readBody(req, 25);
-      const payload = JSON.parse(buf.toString('utf8'));
-      const imageDataUrl = payload.image || '';
-      const validImage = /^data:image\/[a-zA-Z0-9.+-]+;base64,/i.test(imageDataUrl)
-        || /^https:\/\/[^\s]+$/i.test(imageDataUrl);
-      if (!validImage || imageDataUrl.length > 35 * 1024 * 1024) {
-        return jsonErr(res, 400, '图片地址格式不正确');
-      }
-      const regions = await withRetry(
-        () => analyzeMotionRegions(imageDataUrl),
-        2, 2000, '动态区域分析'
-      );
-      return jsonOK(res, { regions });
-    } catch (e) {
-      console.error('[analyze-motion] 错误:', e.message);
-      return jsonErr(res, 500, e.message || '动态区域分析失败');
-    }
-  }
-
   // 单独重抽图像（功能10）
   if (req.method === 'POST' && url === '/api/generate-image') {
     try {
@@ -1126,7 +1136,7 @@ const server = http.createServer(async (req, res) => {
       if (!m) return jsonErr(res, 400, '图片数据格式不正确');
       const t0 = Date.now();
       const sentence = await withRetry(
-        () => generateSentence(dataUrl, userText, tone),
+        () => generateSentence(dataUrl, userText, tone, payload.bilingual !== false),
         3, 3000, '文案重抽'
       );
       console.log('[generate-sentence] 完成 ' + Math.round((Date.now()-t0)/1000) + 's');
@@ -1144,26 +1154,12 @@ const server = http.createServer(async (req, res) => {
     if (!authUser) return jsonErr(res, 401, '请先登录后再寄送明信片');
     return (async () => {
       try {
-        const buf = await readBody(req, 25);
+        const buf = await readBody(req, 80);
         const payload = JSON.parse(buf.toString('utf8'));
         const fromName = (payload.fromName || '').toString().slice(0, 30).trim() || authUser;
         const toName = (payload.toName || '朋友').toString().slice(0, 30).trim() || '朋友';
         const message = (payload.message || '').toString().slice(0, 300);
-        const imageDataUrl = payload.image || '';
-        const sentence = (payload.sentence || '').toString().slice(0, 300);
-        const animations = Array.isArray(payload.animations) ? payload.animations.slice(0, 5) : [];
-        const audio = payload.audio && typeof payload.audio.url === 'string' && payload.audio.url.length <= 14 * 1024 * 1024
-          ? { url: payload.audio.url, name: String(payload.audio.name || '声音').slice(0, 80), type: String(payload.audio.type || '').slice(0, 20) }
-          : null;
-        if (!imageDataUrl) return jsonErr(res, 400, '缺少图片');
-
-        // 把图片保存到本地（与社区共用目录）
-        let imageUrl = imageDataUrl;
-        if (imageDataUrl.startsWith('data:image/')) {
-          const imgId = saveImageFromDataUrl(imageDataUrl);
-          imageUrl = '/community_img/' + imgId;
-        }
-
+        const content = cardContent(payload);
         const code = genInviteCode();
         const card = {
           id: genId('card'),
@@ -1171,11 +1167,8 @@ const server = http.createServer(async (req, res) => {
           fromName,
           toName,
           message,
-          sentence,
-          image: imageUrl,
-          animations,
-          audio,
-          stamp,
+          ...content,
+          fromUser: authUser,
           createdAt: Date.now(),
           opened: false,
           openedAt: null,
@@ -1200,12 +1193,12 @@ const server = http.createServer(async (req, res) => {
     const card = d.cards.find(c => c.code === code || c.id === code);
     if (!card) return jsonErr(res, 404, '这张明信片不存在或已撤回');
     // 标记已拆开（仅一次）
-    if (!card.opened) {
+    if (!card.opened && !card.channel) {
       card.opened = true;
       card.openedAt = Date.now();
       saveCards(d);
     }
-    return jsonOK(res, { card });
+    return jsonOK(res, { card: delivery.publicCard(card) });
   }
 
   // 健康检查
@@ -1227,7 +1220,7 @@ const server = http.createServer(async (req, res) => {
   // skill 列表（供前端下拉框用，不泄露提示词全文）
   if (req.method === 'GET' && url === '/api/skills') {
     res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
-    res.end(JSON.stringify(SKILLS.map(s => ({ id: s.id, name: s.name, desc: s.desc }))));
+    res.end(JSON.stringify(SKILLS.filter(s => SKILL_PROMPTS.get(s.id)?.loaded).map(s => ({ id: s.id, name: s.name, desc: s.desc }))));
     return;
   }
 
@@ -1258,25 +1251,15 @@ const server = http.createServer(async (req, res) => {
     if (!authUser) return jsonErr(res, 401, '请先登录后再保存作品');
     return (async () => {
       try {
-        const buf = await readBody(req, 25);
+        const buf = await readBody(req, 80);
         const payload = JSON.parse(buf.toString('utf8'));
         const ownerNick = authUser; // 作者强制取登录用户名
         const title = (payload.title || '').toString().slice(0, 100).trim();
-        const sentence = (payload.sentence || '').toString().slice(0, 300);
-        const imageDataUrl = payload.image || '';
-        const skill = (payload.skill || '').toString().slice(0, 60);
-        const tone = (payload.tone || '').toString().slice(0, 30);
-        const animations = Array.isArray(payload.animations) ? payload.animations.slice(0, 5) : [];
-        const visibility = payload.visibility === 'private' ? 'private' : 'public';
-        if (!imageDataUrl) return jsonErr(res, 400, '缺少图片');
-        let imageUrl = imageDataUrl;
-        if (imageDataUrl.startsWith('data:image/')) {
-          const imgId = saveImageFromDataUrl(imageDataUrl);
-          imageUrl = '/community_img/' + imgId;
-        }
+        const content = cardContent(payload);
+        const visibility = payload.visibility === 'public' ? 'public' : 'private';
         const work = {
           id: genId('work'),
-          ownerNick, title, sentence, image: imageUrl, animations, skill, tone, visibility,
+          ownerNick, title, ...content, visibility,
           postId: null,
           createdAt: Date.now(),
         };
@@ -1297,19 +1280,21 @@ const server = http.createServer(async (req, res) => {
     const nick = (query.get('nick') || '').toString().trim().toLowerCase();
     if (!nick) return jsonErr(res, 400, '缺少 nick 参数');
     const d = loadMyWorks();
+    const viewer = (getAuthUser(req) || '').toLowerCase();
     const works = d.works
-      .filter(w => (w.ownerNick || '').toLowerCase() === nick)
+      .filter(w => (w.ownerNick || '').toLowerCase() === nick &&
+        (viewer === nick || w.visibility === 'public'))
       .sort((a, b) => b.createdAt - a.createdAt);
     return jsonOK(res, { works, total: works.length });
   }
-  // POST /api/myworks/:id/update —— 更新可见性/标题
+  // POST /api/myworks/:id/update —— 更新卡片内容、可见性或标题
   const workUpdateMatch = url.match(/^\/api\/myworks\/([^/]+)\/update$/);
   if (req.method === 'POST' && workUpdateMatch) {
     const authUser = getAuthUser(req);
     if (!authUser) return jsonErr(res, 401, '请先登录');
     return (async () => {
       try {
-        const buf = await readBody(req, 1);
+        const buf = await readBody(req, 80);
         const payload = JSON.parse(buf.toString('utf8') || '{}');
         const d = loadMyWorks();
         const w = d.works.find(x => x.id === workUpdateMatch[1]);
@@ -1317,7 +1302,12 @@ const server = http.createServer(async (req, res) => {
         if ((w.ownerNick || '').toLowerCase() !== authUser.toLowerCase()) return jsonErr(res, 403, '无权操作他人作品');
         if (payload.visibility === 'public' || payload.visibility === 'private') w.visibility = payload.visibility;
         if (typeof payload.title === 'string') w.title = payload.title.slice(0, 100).trim();
-        if (Array.isArray(payload.animations)) w.animations = payload.animations.slice(0, 5);
+        Object.assign(w, cardContent(payload, w), { updatedAt: Date.now() });
+        if (w.postId) {
+          const db = loadDB();
+          const post = db.posts.find(post => post.id === w.postId);
+          if (post) { Object.assign(post, cardContent(w), { title: w.title, hidden: w.visibility !== 'public' }); saveDB(db); }
+        }
         saveMyWorks(d);
         return jsonOK(res, { ok: true, work: w });
       } catch (e) { return jsonErr(res, 500, '更新失败：' + e.message); }
@@ -1332,6 +1322,8 @@ const server = http.createServer(async (req, res) => {
     const idx = d.works.findIndex(x => x.id === workDeleteMatch[1]);
     if (idx < 0) return jsonErr(res, 404, '作品不存在');
     if ((d.works[idx].ownerNick || '').toLowerCase() !== authUser.toLowerCase()) return jsonErr(res, 403, '无权操作他人作品');
+    const removed = d.works[idx];
+    if (removed.postId) { const db = loadDB(); const post = db.posts.find(post => post.id === removed.postId); if (post) { post.hidden = true; saveDB(db); } }
     d.works.splice(idx, 1);
     saveMyWorks(d);
     return jsonOK(res, { ok: true });
@@ -1350,20 +1342,19 @@ const server = http.createServer(async (req, res) => {
         if (!w) return jsonErr(res, 404, '作品不存在');
         if ((w.ownerNick || '').toLowerCase() !== authUser.toLowerCase()) return jsonErr(res, 403, '无权操作他人作品');
         const db = loadDB();
+        const existing = db.posts.find(p => p.id === w.postId);
         const post = {
-          id: genId('post'),
+          id: existing?.id || genId('post'),
           author: authUser,
           title: (payload.title || w.title || '').toString().slice(0, 100).trim(),
           description: (payload.description || '').toString().slice(0, 500),
-          sentence: w.sentence,
-          image: w.image,
-          animations: Array.isArray(w.animations) ? w.animations.slice(0, 5) : [],
-          likes: 0, likers: [],
-          createdAt: Date.now(),
+          ...cardContent(w),
+          likes: existing?.likes || 0, likers: existing?.likers || [], hidden: false,
+          createdAt: existing?.createdAt || Date.now(),
           featured: false, featuredAt: null, featuredNote: '',
           challengeId: (payload.challengeId || '').toString().slice(0, 60) || null,
         };
-        db.posts.push(post);
+        if (existing) Object.assign(existing, post); else db.posts.push(post);
         saveDB(db);
         w.postId = post.id;
         w.visibility = 'public';
@@ -1382,15 +1373,16 @@ const server = http.createServer(async (req, res) => {
     const query = new URL(req.url, 'http://x').searchParams;
     const nick = (query.get('nick') || '').toString().trim().toLowerCase();
     if (!nick) return jsonErr(res, 400, '缺少 nick 参数');
+    if ((getAuthUser(req) || '').toLowerCase() !== nick) return jsonErr(res, 403, '请登录自己的账户查看寄送箱');
     const d = loadCards();
-    // 模糊匹配：nick 包含在 fromName / toName 里（忽略大小写）
+    // 寄送箱只供本人查看，寄件身份与显示署名分开。
     const sent = d.cards
-      .filter(c => (c.fromName || '').toLowerCase().includes(nick))
+      .filter(c => (c.fromUser || c.fromName || '').toLowerCase() === nick && c.keepRecord !== false)
       .sort((a, b) => b.createdAt - a.createdAt);
     const received = d.cards
-      .filter(c => (c.toName || '').toLowerCase().includes(nick))
+      .filter(c => c.channel ? (c.receivedBy || []).some(user => user.toLowerCase() === nick) : (c.toName || '').toLowerCase() === nick)
       .sort((a, b) => b.createdAt - a.createdAt);
-    return jsonOK(res, { sent, received, sentCount: sent.length, receivedCount: received.length });
+    return jsonOK(res, { sent: sent.map(({ mailPayload, fingerprint, requestId, ...card }) => card), received: received.map(card => delivery.publicCard(card)), sentCount: sent.length, receivedCount: received.length });
   }
 
   /* ============================================================
@@ -1493,6 +1485,7 @@ server.listen(PORT, '0.0.0.0', () => {
   console.log('  正在检测上游 API 连通性…');
   // 异步检测，不阻塞服务启动
   (async () => {
+    if (!config.apiKey) { console.warn('  AI 接口尚未配置，请设置 POSTCARD_API_KEY 后重启。'); return; }
     try {
       const t0 = Date.now();
       const res = await httpsRequest('GET', config.baseUrl + '/models', {
@@ -1513,7 +1506,7 @@ server.listen(PORT, '0.0.0.0', () => {
     console.log('================================================');
   })();
   // 自动打开浏览器：Windows 用 start 命令，URL 必须用引号包住避免被解析成窗口标题
-  exec('start "" "' + url + '"', (err) => {
+  if (process.platform === 'win32' && process.env.POSTCARD_OPEN_BROWSER !== '0') exec('start "" "' + url + '"', (err) => {
     if (err) {
       console.warn('  ⚠ 自动打开浏览器失败：' + err.message);
       console.warn('    请手动访问： ' + url);

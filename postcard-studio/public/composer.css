@@ -1,0 +1,65 @@
+/* 创作页保持纸面感，照片与留言各自清晰、可读。 */
+[hidden] { display: none !important; }
+.composer-intro { padding: 34px 4px 30px; }
+.composer-intro .eyebrow { font-size: 12px; letter-spacing: .2em; color: #796957; }
+.composer-intro h2 { font-family: var(--quote-cn-font); font-size: clamp(30px, 5vw, 46px); font-weight: 500; margin: 12px 0; }
+.composer-intro > p:last-child, .section-note { color: var(--ink-soft); line-height: 1.8; }
+.compose-section { margin-bottom: 24px; padding: 28px; border-radius: 8px; box-shadow: none; }
+.compose-section h3 { display: flex; align-items: center; gap: 12px; font-size: 20px; margin: 0 0 20px; }
+.step-number { color: #897961; font: 16px Georgia, serif; padding-right: 10px; border-right: 1px solid var(--line); }
+.compose-section .lbl { margin-top: 20px; }
+.compose-section textarea { min-height: 100px; }
+#personalMessage { min-height: 150px; font: 20px/1.8 var(--quote-cn-font); }
+.advanced-settings, .handwriting-editor { margin: 20px 0 4px; border-top: 1px solid var(--line); padding-top: 16px; }
+summary { cursor: pointer; color: var(--ink-soft); line-height: 1.7; }
+summary:focus-visible, button:focus-visible, canvas:focus-visible { outline: 2px solid #526854; outline-offset: 4px; }
+.compose-section button:not(.sp-item):not(.gen):not(.letter-photo) { min-height: 40px; }
+.ink-tools button, #suggestBtn, #messageSuggestion button, .advanced-settings > .actions button { padding: 8px 14px; border: 1px solid var(--line); border-radius: 4px; background: var(--paper); color: var(--ink); cursor: pointer; }
+#suggestBtn { margin: 12px 0 0 10px; }
+#skillPicker #spCurrent { display: none; }
+#skillPicker .sp-list { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); position: static; max-height: none; overflow: visible; box-shadow: none; border: 0; background: transparent; gap: 12px; padding: 0; animation: none; }
+#skillPicker .sp-item { display: flex; flex-direction: column; align-items: stretch; text-align: left; white-space: normal; padding: 12px; border: 1px solid var(--line); border-radius: 5px; background: var(--paper); position: relative; min-width: 0; cursor: pointer; }
+#skillPicker .sp-item.active { border: 2px solid #526854; padding: 11px; background: #f4f5ef; }
+#skillPicker .sp-thumb { width: 100%; height: 75px; border-radius: 2px; flex-shrink: 0; font-size: 0; margin-bottom: 12px; }
+#skillPicker .sp-thumb::before { content: ''; width: 38%; height: 65%; position: absolute; left: 17%; top: 20%; background: var(--sp-accent); opacity: .55; border-radius: 70% 10% 50% 10%; }
+#skillPicker .sp-item:nth-child(2n) .sp-thumb::before { border-radius: 0; transform: rotate(-12deg); }
+#skillPicker .sp-item:nth-child(3n) .sp-thumb::before { border-radius: 50%; width: 30%; }
+#skillPicker .sp-meta { flex: auto; min-width: 0; }
+#skillPicker .sp-name { font-size: 14px; white-space: normal; }
+#skillPicker .sp-desc { white-space: normal; font-size: 12px; line-height: 1.6; margin-top: 5px; }
+#skillPicker .sp-check { position: absolute; right: 18px; top: 18px; color: #344b36; }
+#messageSection .audio-panel { margin: 22px 0; border-radius: 5px; background: #f6f3ec; }
+.music-options { margin: 12px 0; font-size: 12px; }
+.audio-actions { flex-wrap: wrap; }
+.audio-name { overflow-wrap: anywhere; }
+.ink-tools { display: flex; flex-wrap: wrap; gap: 8px; margin: 12px 0; }
+.ink-tools [aria-pressed="true"] { color: white; background: #526854; }
+#handwritingCanvas { display: block; width: 100%; height: auto; aspect-ratio: 5 / 2; border: 1px solid var(--line); background: repeating-linear-gradient(transparent 0 39px, #e4dfd4 39px 40px), #fffcf6; touch-action: none; cursor: crosshair; }
+#messageSuggestion { margin-top: 12px; padding: 16px; border-left: 2px solid #526854; background: #f3f5ee; }
+#suggestionText { white-space: pre-wrap; line-height: 1.8; }
+.letter-card { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); background: #f9f6ee; border: 1px solid #ddd5c5; margin: 20px 0; overflow: hidden; text-align: left; }
+.letter-photo { display: flex; align-items: center; justify-content: center; padding: 0; border: 0; border-radius: 0; background: #e9e5db; cursor: pointer; position: relative; min-width: 0; min-height: 330px; }
+.letter-photo:disabled { cursor: default; opacity: 1; }
+.letter-card .letter-photo img { display: block; width: 100%; max-height: 600px; height: auto; object-fit: contain; border-radius: 0; }
+.photo-caption { position: absolute; bottom: 12px; left: 12px; right: 12px; width: fit-content; padding: 7px 10px; background: #fffdf2ee; color: #3d4439; font-size: 12px; line-height: 1.5; }
+.letter-body { padding: 32px 26px; min-width: 0; display: flex; flex-direction: column; gap: 20px; border-left: 1px solid #ddd5c5; }
+.letter-mark { align-self: flex-end; letter-spacing: .16em; font: 12px Georgia, serif; color: #887760; padding: 8px; border: 1px dashed #b4a78d; }
+.letter-message { font-family: var(--quote-en-font), var(--quote-cn-font); font-size: 21px; line-height: 1.9; white-space: pre-wrap; overflow-wrap: anywhere; margin: 12px 0; }
+.letter-message:empty { display: none; }
+.letter-card .letter-ink { width: 100%; height: auto; object-fit: contain; border-radius: 0; }
+.letter-sound { display: flex; flex-direction: column; gap: 8px; font-size: 12px; color: var(--ink-soft); }
+.letter-sound audio { width: 100%; max-width: 100%; height: 40px; }
+.letter-stamp { align-self: flex-start; color: #8a5440; border: 1px solid #a57b65; border-radius: 50%; padding: 10px 16px; font-size: 13px; margin-top: auto; overflow-wrap: anywhere; max-width: 100%; }
+.letter-date { color: #887760; font: 12px var(--date-font); }
+.gallery-message { white-space: pre-wrap; line-height: 1.7; margin-bottom: 8px; }
+#result .cardbar { margin-top: 16px; justify-content: flex-start; }
+#result #sendBtn { background: #3f5947; color: #fff; }
+@media (max-width: 650px) {
+  .compose-section { padding: 20px 16px; }
+  #skillPicker .sp-list { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 9px; }
+  .letter-card { grid-template-columns: minmax(0, 1fr); }
+  .letter-photo { min-height: 240px; }
+  .letter-body { border-left: 0; border-top: 1px solid #ddd5c5; padding: 24px; }
+  .letter-message { font-size: 20px; }
+  .composer-intro { padding-top: 20px; }
+}

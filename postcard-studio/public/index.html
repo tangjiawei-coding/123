@@ -281,29 +281,7 @@
     display:flex;align-items:center;justify-content:center;
     position:relative;overflow:hidden;
   }
-  .motion-stage{position:relative;width:100%;height:100%;overflow:hidden;background:#000}
-  .motion-stage>.motion-base{width:100%;height:100%;object-fit:cover;display:block}
-  .motion-layer{position:absolute;pointer-events:none;will-change:transform;backface-visibility:hidden;-webkit-backface-visibility:hidden;overflow:hidden}
-  .motion-layer img{position:absolute;max-width:none;display:block;pointer-events:none;transform:none!important}
-  .motion-layer.circle{border-radius:50%}
-  .motion-layer.spin{animation:motionSpin var(--motion-duration,1.5s) linear infinite}
-  .motion-layer.swing{animation:motionSwing var(--motion-duration,1.5s) ease-in-out infinite alternate;transform-origin:var(--pivot-x,50%) var(--pivot-y,50%)}
-  .motion-layer.breathe{animation:motionBreathe var(--motion-duration,2s) ease-in-out infinite}
-  .motion-layer.float{animation:motionFloat var(--motion-duration,2.5s) ease-in-out infinite alternate}
-  .motion-paused .motion-layer{animation-play-state:paused!important}
-  @keyframes motionSpin{to{transform:rotate(var(--motion-turn,360deg))}}
-  @keyframes motionSwing{from{transform:rotate(-5deg)}to{transform:rotate(5deg)}}
-  @keyframes motionBreathe{0%,100%{transform:scale(1)}50%{transform:scale(1.045)}}
-  @keyframes motionFloat{from{transform:translate3d(0,2%,0)}to{transform:translate3d(2%,-2%,0)}}
-  .motion-panel{display:none;margin-top:14px;border:1px solid var(--line);border-radius:8px;background:var(--paper);padding:12px 14px}
-  .motion-panel.show{display:block}
-  .motion-panel-head{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:8px}
-  .motion-panel-title{font-size:13px;font-weight:700;color:var(--ink)}
-  .motion-list{display:flex;flex-wrap:wrap;gap:8px}
-  .motion-chip{border:1px solid var(--line);background:#fff;color:var(--ink-soft);border-radius:7px;padding:7px 10px;font-size:12px;cursor:pointer}
-  .motion-chip.active{border-color:var(--accent);background:var(--accent-soft);color:var(--accent);font-weight:600}
-  .motion-empty{font-size:12px;color:var(--ink-soft)}
-  @media(prefers-reduced-motion:reduce){.motion-layer{animation:none!important}}
+  .postcard .pc-img img{width:100%;height:100%;object-fit:cover;display:block}
   .postcard .pc-text{
     flex:1;padding:34px 30px;
     display:flex;flex-direction:column;justify-content:center;position:relative;
@@ -707,7 +685,7 @@
     cursor:pointer;
   }
   .env-card-display{margin-top:24px;text-align:center}
-  .env-card-display>.motion-stage{max-width:100%;border-radius:10px;border:1px solid var(--line);box-shadow:0 8px 24px rgba(60,50,30,.14)}
+  .env-card-display>img{width:100%;aspect-ratio:1;object-fit:cover;display:block;max-width:100%;border-radius:10px;border:1px solid var(--line);box-shadow:0 8px 24px rgba(60,50,30,.14)}
   .env-meta{margin-top:14px;font-size:14px;color:var(--ink-soft);line-height:1.6}
 
   /* ============ 功能8：社区筛选栏 ============ */
@@ -886,6 +864,7 @@
     header p{font-size:13px}
   }
 </style>
+<link rel="stylesheet" href="composer.css">
 </head>
 <body>
 <div class="wrap">
@@ -906,8 +885,10 @@
 
   <!-- ========== 视图 1：生成明信片 ========== -->
   <div class="view active" id="view-gen">
-    <div class="panel">
-      <div class="drop" id="drop">
+    <div class="composer-intro"><p class="eyebrow">一张照片，一封问候</p><h2>把这一刻，寄给你。</h2><p>选一张照片，留下你的话。画风由你决定。</p></div>
+    <section class="panel compose-section">
+      <h3><span class="step-number">01</span> 选照片和画风</h3>
+      <div class="drop" id="drop" role="button" tabindex="0" aria-label="选择一张照片">
         <div class="ph">⬆</div>
         <div class="main">把照片拖到这里，或点击选择</div>
         <p>支持 JPG / PNG / WEBP</p>
@@ -922,134 +903,7 @@
         <button class="btn-x" id="clearBtn">移除</button>
       </div>
 
-      <div class="mood-wrap">
-        <div class="mood-head" id="moodToggle" title="点我展开/收起标签快选">
-          <span class="mh-title">🏷 标签 / 心情关键词</span>
-          <span class="mh-sub" id="moodSelectedHint">已选 0 个</span>
-          <span class="mh-caret" id="moodCaret">▼</span>
-        </div>
-        <div class="mood-body" id="moodBody">
-          <div class="mood-hint">多选几个词，AI 会据此调整作品气质（可和下面的文字描述叠加使用）</div>
-          <div class="mood-selected" id="moodSelected" style="display:none"></div>
-
-          <div class="mood-groups">
-            <div class="mg-group">
-              <div class="mg-title">📍 场景地点</div>
-              <div class="mg-chips">
-                <span class="chip" data-v="海边">🌊 海边</span>
-                <span class="chip" data-v="城市街景">🌆 城市街景</span>
-                <span class="chip" data-v="森林">🌲 森林</span>
-                <span class="chip" data-v="乡村">🏡 乡村</span>
-                <span class="chip" data-v="咖啡馆">☕ 咖啡馆</span>
-                <span class="chip" data-v="办公室">💻 办公室</span>
-                <span class="chip" data-v="旅途中">🚗 旅途中</span>
-                <span class="chip" data-v="家里">🛋 家里</span>
-                <span class="chip" data-v="校园">🎓 校园</span>
-                <span class="chip" data-v="山上">⛰ 山上</span>
-                <span class="chip" data-v="公园">🌳 公园</span>
-                <span class="chip" data-v="美术馆">🎨 美术馆</span>
-              </div>
-            </div>
-            <div class="mg-group">
-              <div class="mg-title">🌤 天气 / 天象</div>
-              <div class="mg-chips">
-                <span class="chip" data-v="晴天">☀️ 晴天</span>
-                <span class="chip" data-v="多云">⛅ 多云</span>
-                <span class="chip" data-v="雨天">🌧 雨天</span>
-                <span class="chip" data-v="雪天">❄️ 雪天</span>
-                <span class="chip" data-v="大风">🌬 大风</span>
-                <span class="chip" data-v="雾天">🌫 雾天</span>
-                <span class="chip" data-v="晚霞">🌅 晚霞</span>
-                <span class="chip" data-v="星空">✨ 星空</span>
-              </div>
-            </div>
-            <div class="mg-group">
-              <div class="mg-title">💭 心情 / 情绪</div>
-              <div class="mg-chips">
-                <span class="chip" data-v="平静">😌 平静</span>
-                <span class="chip" data-v="温暖">🤗 温暖</span>
-                <span class="chip" data-v="孤独">🥲 孤独</span>
-                <span class="chip" data-v="思念">💭 思念</span>
-                <span class="chip" data-v="开心">🎉 开心</span>
-                <span class="chip" data-v="疲惫">😮‍💨 疲惫</span>
-                <span class="chip" data-v="释然">🍃 释然</span>
-                <span class="chip" data-v="浪漫">🥰 浪漫</span>
-                <span class="chip" data-v="迷茫">🌫 迷茫</span>
-                <span class="chip" data-v="期待">🌟 期待</span>
-                <span class="chip" data-v="难过">😢 难过</span>
-                <span class="chip" data-v="自由">🕊 自由</span>
-                <span class="chip" data-v="焦虑">😤 焦虑</span>
-                <span class="chip" data-v="失眠">🌙 失眠</span>
-              </div>
-            </div>
-            <div class="mg-group">
-              <div class="mg-title">🕒 时间 / 时段</div>
-              <div class="mg-chips">
-                <span class="chip" data-v="清晨">🌄 清晨</span>
-                <span class="chip" data-v="午后">☀️ 午后</span>
-                <span class="chip" data-v="黄昏">🌇 黄昏</span>
-                <span class="chip" data-v="深夜">🌙 深夜</span>
-                <span class="chip" data-v="周末">🎶 周末</span>
-                <span class="chip" data-v="假期">🏝 假期</span>
-                <span class="chip" data-v="工作日">📅 工作日</span>
-                <span class="chip" data-v="节日">🎊 节日</span>
-                <span class="chip" data-v="深夜加班">💡 深夜加班</span>
-              </div>
-            </div>
-            <div class="mg-group">
-              <div class="mg-title">🍃 季节</div>
-              <div class="mg-chips">
-                <span class="chip" data-v="春天">🌸 春</span>
-                <span class="chip" data-v="夏天">🌿 夏</span>
-                <span class="chip" data-v="秋天">🍂 秋</span>
-                <span class="chip" data-v="冬天">❄️ 冬</span>
-              </div>
-            </div>
-            <div class="mg-group">
-              <div class="mg-title">👥 人物 / 陪伴</div>
-              <div class="mg-chips">
-                <span class="chip" data-v="独处">🙋 独处</span>
-                <span class="chip" data-v="和朋友">👭 和朋友</span>
-                <span class="chip" data-v="和恋人">💑 和恋人</span>
-                <span class="chip" data-v="和家人">👨‍👩‍👧 和家人</span>
-                <span class="chip" data-v="擦肩而过的陌生人">🚶 擦肩而过</span>
-                <span class="chip" data-v="和宠物">🐱 宠物</span>
-                <span class="chip" data-v="人来人往的人群">🧑‍🎨 人群中</span>
-              </div>
-            </div>
-          </div>
-          <div class="mood-clear">
-            <button id="moodClearBtn" class="btn-ghost" style="padding:4px 12px;font-size:12px;display:none">🧹 清空已选标签</button>
-          </div>
-        </div>
-      </div>
-
-      <label class="lbl">对这张照片的描述（可选）</label>
-      <textarea id="text" placeholder="可以只选上方标签，也可以在这里写一段更详细的描述，两者会一起传给 AI。&#10;示例：黄昏的海边，我独自望着远方，心里有淡淡的思念。"></textarea>
-      <div class="hint">标签 + 文字会合并后一起影响左侧编辑图的情绪和标题、右侧那句话的走向。（标签可多选，不填文字也能生成）</div>
-
-      <!-- ====== 风格设置（可折叠） ====== -->
-      <div class="settings-wrap" id="settingsWrap">
-        <div class="settings-head" id="settingsToggle">
-          <span class="sh-title">⚙️ 风格设置</span>
-          <span class="sh-sub" id="settingsHint">模式 / 风格 / 字体</span>
-          <span class="sh-caret" id="settingsCaret">▼</span>
-        </div>
-        <div class="settings-body" id="settingsBody">
-          <label class="lbl">生成模式</label>
-          <div class="mode-row">
-            <div class="mode-card active" data-mode="fast">
-              <div class="name"><span class="dot"></span>快速模式 ⚡</div>
-              <div class="desc">768×768 分辨率，约 15–30 秒，适合日常分享</div>
-            </div>
-            <div class="mode-card" data-mode="quality">
-              <div class="name"><span class="dot"></span>高质量模式 ✨</div>
-              <div class="desc">1024×1024 分辨率，约 30–60 秒，细节更丰富</div>
-            </div>
-          </div>
-          <div class="hint">自动压缩：上传的照片会先缩小到最长边 1024px 再发送，大幅加快速度。</div>
-
-          <label class="lbl">图像风格</label>
+      <label class="lbl">你想把这一刻画成什么样？</label>
           <div class="skill-picker" id="skillPicker">
             <select id="skillSel">
               <option value="photo-abstract-editorial">象牙抽象编辑</option>
@@ -1064,18 +918,22 @@
             </div>
             <div class="sp-list" id="spList"></div>
           </div>
-          <div class="hint">选择左侧图片的生成风格（6 个已安装 Codex skill 之一）。</div>
-
-          <label class="lbl">文案风格</label>
-          <select id="toneSel">
-            <option value="poetic">哲理诗意（默认）</option>
-            <option value="healing">治愈温柔</option>
-            <option value="sassy">毒舌吐槽</option>
-            <option value="love">情侣表白</option>
-            <option value="travel">旅行日记</option>
-            <option value="literary">文艺留白</option>
-          </select>
-          <div class="hint">影响右侧那句中英双语句子的情感基调。可单独点「重抽文案」切换风格重试。</div>
+      <p class="hint">色块为风格示意，生成结果会依据你的照片绘制。</p>
+      <details class="advanced-settings"><summary>画面与字体设置</summary>
+        <label class="lbl" for="text">画面补充说明（可选）</label>
+        <textarea id="text" placeholder="例如：保留海边的落日，颜色温暖一些"></textarea>
+          <label class="lbl">生成模式</label>
+          <div class="mode-row">
+            <div class="mode-card active" data-mode="fast">
+              <div class="name"><span class="dot"></span>快速模式 ⚡</div>
+              <div class="desc">768×768 分辨率，约 15–30 秒，适合日常分享</div>
+            </div>
+            <div class="mode-card" data-mode="quality">
+              <div class="name"><span class="dot"></span>高质量模式 ✨</div>
+              <div class="desc">1024×1024 分辨率，约 30–60 秒，细节更丰富</div>
+            </div>
+          </div>
+          <div class="hint">自动压缩：上传的照片会先缩小到最长边 1024px 再发送，大幅加快速度。</div>
 
           <label class="lbl">明信片字体</label>
           <div class="font-grid">
@@ -1093,35 +951,55 @@
             </div>
           </div>
           <div class="hint">中文字体应用于中文，英文字体应用于英文和数字；日期字体单独可选。选择会自动保存。</div>
+      </details>
+      <div class="actions"><button class="gen" id="genBtn">生成 AI 画面</button><span class="status" id="status" role="status" aria-live="polite"></span></div>
+      <details class="advanced-settings"><summary>更多创作方式</summary><div class="actions"><button id="compareBtn">比较几种画风</button><button id="batchBtn">批量生成</button></div></details>
+      <input type="file" id="batchFile" accept="image/*" multiple hidden>
+    </section>
+    <section class="panel compose-section" id="messageSection">
+      <h3><span class="step-number">02</span> 留下你的话</h3>
+      <p class="section-note">画面生成时也能继续写。文字、原声和手写可以自由组合，也可以留白。</p>
+      <label class="lbl" for="personalMessage">想对 Ta 说的话</label>
+      <textarea id="personalMessage" maxlength="1000" placeholder="今天路过这里，忽然想把眼前的风景寄给你。"></textarea>
+      <details class="advanced-settings"><summary>没想好怎么写？让 AI 给一点灵感</summary>
+        <label class="lbl" for="toneSel">建议的语气</label>
+          <select id="toneSel">
+            <option value="poetic">哲理诗意（默认）</option>
+            <option value="healing">治愈温柔</option>
+            <option value="sassy">毒舌吐槽</option>
+            <option value="love">情侣表白</option>
+            <option value="travel">旅行日记</option>
+            <option value="literary">文艺留白</option>
+          </select>
+        <button id="suggestBtn" type="button">给我一句建议</button>
+        <div id="messageSuggestion" hidden><p id="suggestionText"></p><button id="acceptSuggestion">采用这句</button><button id="dismissSuggestion">暂时不用</button></div>
+      </details>
+      <div class="audio-panel show" id="audioPanel">
+        <div class="audio-head">
+          <div><div class="audio-title">留下一段原声</div><div class="audio-sub">录下你想说的话，也可以上传已有录音</div></div>
+          <button class="audio-chip" id="audioClearBtn">清除</button>
         </div>
-      </div>
-
-      <div class="actions">
-        <button class="gen" id="genBtn">生成明信片</button>
-        <button class="gen" id="compareBtn" style="background:var(--accent)">🔀 风格对比</button>
-        <button class="gen" id="batchBtn" style="background:var(--paper);color:var(--ink);border:1px solid var(--line)">📦 批量生成</button>
-        <span class="status" id="status"></span>
-      </div>
-      <input type="file" id="batchFile" accept="image/*" multiple style="display:none">
-    </div>
-
-    <div class="result" id="result">
-      <div class="head">
-        <h2>你的明信片</h2>
-        <div class="cardbar">
-          <button id="saveBtn">保存为图片</button>
-          <button id="copyBtn">复制文案</button>
-          <button id="saveWorkBtn" style="display:none">📁 存到作品库</button>
-          <button id="redoImgBtn" style="display:none">🎨 重抽图像</button>
-          <button id="redoTxtBtn" style="display:none">✍️ 重抽文案</button>
-          <button id="motionBtn" style="display:none">✨ AI 动效</button>
-          <button id="stampBtn" style="display:none">◉ 私人邮戳</button>
-          <button id="audioBtn" style="display:none">🎵 添加声音</button>
-          <button id="sendBtn">💌 寄送</button>
-          <button id="shareBtn" class="primary">📤 分享到社区</button>
-          <button id="againBtn">再做一张</button>
+        <details class="music-options"><summary>也可以附上一段音乐</summary><div class="audio-options" id="audioOptions"></div></details>
+        <div class="audio-actions">
+          <button id="audioRecordBtn">开始录音</button>
+          <button id="audioStopBtn" disabled>停止录音</button>
+          <label for="audioFile">上传音频</label>
+          <input type="file" id="audioFile" accept="audio/*" style="display:none">
+          <span class="audio-name" id="audioName">尚未选择声音</span>
         </div>
+        <audio id="audioPreview" controls style="display:none"></audio>
       </div>
+      <details class="handwriting-editor"><summary>亲手写几笔</summary><p class="hint">用手指、触控笔或鼠标书写，我们会保留你的笔迹。</p>
+        <div class="ink-tools"><button id="inkPen" aria-pressed="true">写字</button><button id="inkEraser" aria-pressed="false">橡皮</button><button id="inkUndo">撤销</button><button id="inkClear">清空</button></div>
+        <canvas id="handwritingCanvas" width="1000" height="400" aria-label="手写留言画板"></canvas>
+      </details>
+    </section>
+    <section class="result panel compose-section" id="result">
+      <h3><span class="step-number">03</span> 看一眼，再寄出</h3>
+      <p class="section-note">默认展示你选的 AI 画面。点击图片即可查看原图，留言会一直留在旁边。</p>
+      <div id="composedPreview"></div>
+      <div class="cardbar"><button id="sendBtn" class="primary">寄给 Ta</button><button id="saveWorkBtn">保存到我的作品</button><button id="saveBtn">导出图片</button><button id="stampBtn">加一个邮戳</button></div>
+      <p class="hint">作品默认私密。导出图片包含文字和笔迹；在线明信片还保留原图与声音。</p>
       <div class="stamp-panel" id="stampPanel">
         <div class="audio-head">
           <div><div class="audio-title">私人邮戳</div><div class="audio-sub">填写地点、日期或主题，自动组合成专属纪念邮戳，也可以直接修改结果</div></div>
@@ -1136,50 +1014,8 @@
         <label class="lbl" style="margin-top:12px">邮戳文字</label>
         <input id="stampText" maxlength="32" placeholder="杭州 · 雨天">
       </div>
-      <div class="audio-panel" id="audioPanel">
-        <div class="audio-head">
-          <div><div class="audio-title">为明信片添加声音</div><div class="audio-sub">可选择内置音乐、录制祝福语，或上传自己的音频</div></div>
-          <button class="audio-chip" id="audioClearBtn">清除</button>
-        </div>
-        <div class="audio-options" id="audioOptions"></div>
-        <div class="audio-actions">
-          <button id="audioRecordBtn">开始录音</button>
-          <button id="audioStopBtn" disabled>停止录音</button>
-          <label for="audioFile">上传音频</label>
-          <input type="file" id="audioFile" accept="audio/*" style="display:none">
-          <span class="audio-name" id="audioName">尚未选择声音</span>
-        </div>
-        <audio id="audioPreview" controls style="display:none"></audio>
-      </div>
-      <div class="motion-panel" id="motionPanel">
-        <div class="motion-panel-head">
-          <span class="motion-panel-title">AI 推荐的局部动效</span>
-          <button class="motion-chip active" id="motionMasterBtn">全部播放</button>
-        </div>
-        <div class="motion-list" id="motionList"></div>
-      </div>
-      <div class="postcard-wrap" id="postcardWrap">
-        <div class="postcard" id="postcard">
-          <div class="pc-face pc-front">
-            <div class="pc-img"><div class="motion-stage" id="motionStage"><img id="resultImg" class="motion-base" alt="编辑式作品"></div></div>
-            <div class="pc-text">
-              <div class="stamp">POST<br>CARD</div>
-              <div class="private-stamp" id="privateStamp" style="display:none"></div>
-              <div class="corner">Editorial</div>
-              <div class="quote" id="resultText">……</div>
-              <div class="divider"></div>
-              <div class="meta" id="meta">由照片与文字生成</div>
-              <button id="audioPlayBtn" class="audio-chip" style="display:none;margin-top:12px">▶ 播放声音</button>
-            </div>
-          </div>
-          <div class="pc-face pc-back">
-            <img id="originalImg" alt="原始照片">
-            <div class="back-label">原始照片 · 点击翻回</div>
-          </div>
-        </div>
-        <div class="flip-hint">👆 点击明信片翻转查看原图</div>
-      </div>
-    </div>
+      <details class="advanced-settings"><summary>更多操作</summary><div class="cardbar"><button id="copyBtn">复制文字</button><button id="shareBtn">公开分享到社区</button><button id="againBtn">重新生成画面</button></div></details>
+    </section>
   </div>
 
   <!-- ========== 视图 2：社区广场 ========== -->
@@ -1567,6 +1403,7 @@
   </div>
 </div>
 
+<script src="composer.js"></script>
 <script>
 /* ============ 通用工具 ============ */
 const $ = (id) => document.getElementById(id);
@@ -1577,12 +1414,12 @@ let myNick = localStorage.getItem(LS_NICK) || '';
 const LS_TOKEN = 'postcard_token';
 let authToken = localStorage.getItem(LS_TOKEN) || '';
 
-// 给所有 fetch 请求自动附带登录 token（Authorization: Bearer）
+// 仅向本站请求附带登录 token。
 (function patchFetch() {
   const _fetch = window.fetch.bind(window);
   window.fetch = (input, init) => {
     init = init || {};
-    if (authToken) {
+    if (authToken && new URL(input instanceof Request ? input.url : input, location.href).origin === location.origin) {
       const h = new Headers(init.headers || {});
       h.set('Authorization', 'Bearer ' + authToken);
       init = Object.assign({}, init, { headers: h });
@@ -1637,10 +1474,7 @@ document.querySelectorAll('.tab').forEach(t => {
 document.querySelectorAll('.bnav-item').forEach(b => {
   b.addEventListener('click', () => switchView(b.dataset.view));
 });
-// 移动端（≤768px）默认进入社区；桌面端保持默认创作工坊
-setTimeout(() => {
-  if (window.innerWidth <= 768) switchView('com');
-}, 0);
+// 手机和桌面都从写明信片开始。
 
 /* ============ 登录 / 注册 ============ */
 let authMode = 'login'; // 'login' | 'register'
@@ -1775,7 +1609,7 @@ let currentDataUrl = null;
 let currentRawUrl = null;   // 未压缩的原始图片，用于明信片背面展示
 let currentRawSize = 0;
 let currentMode = 'fast';
-let lastGenerated = null; // { image, sentence, animations, audio, stamp }
+let lastGenerated = null; // 当前卡片；完整媒体结构由 cardPayload 统一提供
 let lastAutoWorkId = null;
 let postcardStamp = '';
 let audioState = { url: '', name: '', type: '', objectUrl: '', recorder: null, chunks: [] };
@@ -1784,8 +1618,6 @@ const BUILTIN_AUDIO = [
   { name: '旅行微风', notes: [293.66, 369.99, 440, 369.99], tempo: 1.2 },
   { name: '星光片刻', notes: [220, 277.18, 329.63, 415.3], tempo: 1.8 },
 ];
-let motionRegions = [];
-let motionMasterPlaying = true;
 const skillSel = $('skillSel');
 const toneSel = $('toneSel');
 let currentSkillName = '象牙抽象编辑';
@@ -1878,7 +1710,7 @@ function fillSkillSel(list){
   spList.innerHTML = '';
   list.forEach(s => {
     const vis = SKILL_VIS[s.id] || { color: '#F3F0E8', accent: '#7A5A3A', emoji: '🎨', desc: s.name };
-    const item = document.createElement('div');
+    const item = document.createElement('button'); item.type = 'button';
     item.className = 'sp-item';
     item.dataset.id = s.id;
     item.style.setProperty('--sp-accent', vis.accent);
@@ -1914,6 +1746,7 @@ function updateSkillCurrent(id){
   // 同步列表选中态
   document.querySelectorAll('.sp-item').forEach(el => {
     el.classList.toggle('active', el.dataset.id === id);
+    el.setAttribute('aria-pressed', String(el.dataset.id === id));
   });
 }
 function selectSkill(id){
@@ -1972,9 +1805,7 @@ skillSel.addEventListener('change', () => {
 function setPrivateStamp(text) {
   postcardStamp = String(text || '').trim().slice(0, 32);
   $('stampText').value = postcardStamp;
-  $('privateStamp').textContent = postcardStamp;
-  $('privateStamp').style.display = postcardStamp ? 'block' : 'none';
-  if (lastGenerated) lastGenerated.stamp = postcardStamp;
+  if (lastGenerated) { lastGenerated.stamp = postcardStamp; refreshCardPreview(); }
 }
 function generatePrivateStamp() {
   const place = $('stampPlace').value.trim();
@@ -1998,11 +1829,11 @@ function setPostcardAudio(audio) {
   previewAudio.src = audioState.url || '';
   previewAudio.style.display = audioState.url ? 'block' : 'none';
   $('audioName').textContent = audioState.name || '尚未选择声音';
+  audioEncoding = false;
   document.querySelectorAll('.audio-chip[data-audio]').forEach(el => el.classList.toggle('active', el.dataset.audio === audioState.url));
   if (lastGenerated) {
     lastGenerated.audio = audioState.url ? { url: audioState.url, name: audioState.name, type: audioState.type } : null;
-    $('audioPlayBtn').style.display = audioState.url ? 'inline-block' : 'none';
-    $('audioPlayBtn').textContent = '▶ 播放声音';
+    refreshCardPreview();
   }
 }
 function createBuiltinMelody(item) {
@@ -2032,6 +1863,7 @@ function renderAudioOptions() {
     const btn = document.createElement('button');
     btn.className = 'audio-chip'; btn.textContent = '♫ ' + item.name;
     btn.addEventListener('click', async () => {
+      if (!audioReady()) return;
       const url = await audioBlobToDataUrl(createBuiltinMelody(item)); btn.dataset.audio = url;
       setPostcardAudio({ url, name: item.name, type: 'builtin' });
     });
@@ -2039,46 +1871,62 @@ function renderAudioOptions() {
   });
 }
 renderAudioOptions();
-$('audioBtn').addEventListener('click', () => $('audioPanel').classList.toggle('show'));
-$('audioClearBtn').addEventListener('click', () => setPostcardAudio({ url: '', name: '', type: '' }));
-$('audioFile').addEventListener('change', e => {
+$('audioClearBtn').addEventListener('click', () => { if (audioReady()) setPostcardAudio({ url: '', name: '', type: '' }); });
+$('audioFile').addEventListener('change', async e => {
   const file = e.target.files[0];
-  if (!file) return;
+  if (!file || !audioReady()) return;
   if (file.size > 10 * 1024 * 1024) { toast('音频不能超过 10MB', 'err'); return; }
-  const reader = new FileReader();
-  reader.onload = () => setPostcardAudio({ url: reader.result, name: file.name, type: 'upload' });
-  reader.readAsDataURL(file);
+  audioEncoding = true;
+  try { setPostcardAudio({ url: await audioBlobToDataUrl(file), name: file.name, type: 'upload' }); }
+  catch (error) { toast('音频读取失败', 'err'); }
+  finally { audioEncoding = false; e.target.value = ''; }
 });
 $('audioRecordBtn').addEventListener('click', async () => {
-  if (!navigator.mediaDevices || !window.MediaRecorder) { toast('当前浏览器不支持录音', 'err'); return; }
+  if (!navigator.mediaDevices || !window.MediaRecorder) { toast('当前浏览器不支持录音，请上传音频', 'err'); return; }
+  if (!audioReady()) return;
+  $('audioRecordBtn').disabled = true;
+  audioEncoding = true;
+  let stream;
   try {
-    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    stream = await navigator.mediaDevices.getUserMedia({ audio: true });
     const recorder = new MediaRecorder(stream);
-    audioState.recorder = recorder; audioState.chunks = [];
-    recorder.ondataavailable = e => { if (e.data.size) audioState.chunks.push(e.data); };
-    recorder.onstop = async () => {
-      stream.getTracks().forEach(track => track.stop());
-      const blob = new Blob(audioState.chunks, { type: recorder.mimeType || 'audio/webm' });
-      const url = await audioBlobToDataUrl(blob);
-      setPostcardAudio({ url, name: '我的语音祝福', type: 'recording' });
+    const chunks = [];
+    audioState.recorder = recorder;
+    let recordedBytes = 0;
+    recorder.ondataavailable = e => {
+      if (e.data.size) { chunks.push(e.data); recordedBytes += e.data.size; }
+      if (recordedBytes > 9 * 1024 * 1024 && recorder.state === 'recording') {
+        audioEncoding = true; recorder.stop(); toast('录音已达到大小上限，已自动停止');
+      }
     };
-    recorder.start();
-    $('audioRecordBtn').disabled = true; $('audioStopBtn').disabled = false;
-    $('audioName').textContent = '录音中…';
-  } catch (e) { toast('无法使用麦克风：' + e.message, 'err'); }
+    recorder.onstop = async () => {
+      audioEncoding = true;
+      stream.getTracks().forEach(track => track.stop());
+      $('audioStopBtn').disabled = true;
+      $('audioName').textContent = '正在准备声音…';
+      try {
+        const blob = new Blob(chunks, { type: recorder.mimeType || 'audio/webm' });
+        if (blob.size > 10 * 1024 * 1024) throw new Error('录音超过 10MB，请缩短后重新录制');
+        const url = await audioBlobToDataUrl(blob);
+        setPostcardAudio({ url, name: '我的原声留言', type: 'recording' });
+      } catch (error) { toast('录音保存失败：' + error.message, 'err'); $('audioName').textContent = audioState.name || '尚未录音'; }
+      finally { audioEncoding = false; $('audioRecordBtn').disabled = false; }
+    };
+    recorder.onerror = () => { if (recorder.state !== 'inactive') recorder.stop(); toast('录音中断，请试听后再保存', 'err'); };
+    recorder.start(1000); audioEncoding = false;
+    $('audioStopBtn').disabled = false; $('audioName').textContent = '正在录下你的声音…';
+  } catch (error) {
+    stream?.getTracks().forEach(track => track.stop());
+    audioEncoding = false; $('audioRecordBtn').disabled = false;
+    toast('无法使用麦克风：' + error.message, 'err');
+  }
 });
 $('audioStopBtn').addEventListener('click', () => {
-  if (audioState.recorder && audioState.recorder.state !== 'inactive') audioState.recorder.stop();
-  $('audioRecordBtn').disabled = false; $('audioStopBtn').disabled = true;
+  if (audioState.recorder && audioState.recorder.state !== 'inactive') {
+    audioEncoding = true; audioState.recorder.stop();
+    $('audioStopBtn').disabled = true;
+  }
 });
-$('audioPlayBtn').addEventListener('click', () => {
-  const player = $('audioPreview');
-  if (!player.src) return;
-  if (player.paused) { player.play(); $('audioPlayBtn').textContent = '⏸ 暂停声音'; }
-  else { player.pause(); $('audioPlayBtn').textContent = '▶ 播放声音'; }
-});
-$('audioPreview').addEventListener('ended', () => { $('audioPlayBtn').textContent = '▶ 播放声音'; });
-
 function bytes(n){ return n<1024 ? n+' B' : n<1048576 ? (n/1024).toFixed(1)+' KB' : (n/1048576).toFixed(2)+' MB'; }
 
 function compressImage(file, maxEdge = 1024, quality = 0.88){
@@ -2111,38 +1959,29 @@ function compressImage(file, maxEdge = 1024, quality = 0.88){
 }
 
 async function setFile(file){
-  if(!file) return;
-  if(!/^image\//.test(file.type)){ alert('请选择图片文件'); return; }
-  currentRawSize = file.size;
-  const reader = new FileReader();
-  reader.onload = async (e)=>{
-    const rawPreviewUrl = e.target.result;
-    currentRawUrl = rawPreviewUrl;   // 保存原图用于明信片背面
-    pvImg.src = rawPreviewUrl;
-    // 预先填入明信片背面，即使生成失败也能翻转查看原图
-    $('originalImg').src = rawPreviewUrl;
-    pvName.textContent = file.name;
-    try{
-      statusEl.innerHTML = '<span class="spinner"></span>正在压缩图片…';
-      const { dataUrl, tw, th, scale } = await compressImage(file, 1024, 0.88);
-      currentDataUrl = dataUrl;
-      const b64Part = dataUrl.split(',')[1] || '';
-      const compressedSize = Math.round(b64Part.length * 0.75);
-      const ratio = currentRawSize ? (compressedSize / currentRawSize * 100).toFixed(0) : '?';
-      pvSize.textContent = `${bytes(file.size)} → ${bytes(compressedSize)}（${ratio}%，${tw}×${th}）`;
-      statusEl.textContent = '';
-    }catch(err){
-      console.error(err);
-      currentDataUrl = rawPreviewUrl;
-      pvSize.textContent = bytes(file.size) + '（压缩失败，使用原图）';
-      statusEl.textContent = '';
-    }
-    preview.classList.add('show');
-  };
-  reader.readAsDataURL(file);
+  if (!file) return;
+  if (!/^image\//.test(file.type)) { toast('请选择图片文件', 'err'); return; }
+  if (file.size > 18 * 1024 * 1024) { toast('请选择 18MB 以内的照片', 'err'); return; }
+  invalidateCardImage();
+  const revision = photoRevision;
+  currentDataUrl = null; currentRawUrl = null;
+  preview.classList.remove('show');
+  statusEl.textContent = '正在准备照片…';
+  try {
+    const { dataUrl, rawUrl, tw, th } = await compressImage(file, 1024, .88);
+    if (revision !== photoRevision) return;
+    currentDataUrl = dataUrl; currentRawUrl = rawUrl; currentRawSize = file.size;
+    pvImg.src = rawUrl; pvName.textContent = file.name;
+    pvSize.textContent = `${bytes(file.size)} · 原图会随卡片保存，AI 使用 ${tw}×${th} 的副本`;
+    preview.classList.add('show'); statusEl.textContent = '';
+  } catch (error) {
+    if (revision === photoRevision) statusEl.textContent = '照片读取失败，请重新选择。';
+  }
 }
 fileInput.addEventListener('change', e=>setFile(e.target.files[0]));
+fileInput.addEventListener('click', e => e.stopPropagation());
 drop.addEventListener('click', ()=>fileInput.click());
+drop.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); fileInput.click(); } });
 drop.addEventListener('dragover', e=>{ e.preventDefault(); drop.classList.add('dragover'); });
 drop.addEventListener('dragleave', ()=>drop.classList.remove('dragover'));
 drop.addEventListener('drop', e=>{
@@ -2150,9 +1989,9 @@ drop.addEventListener('drop', e=>{
   if(e.dataTransfer.files[0]) setFile(e.dataTransfer.files[0]);
 });
 $('clearBtn').addEventListener('click', ()=>{
+  invalidateCardImage();
   currentDataUrl=null; currentRawUrl=null; fileInput.value=''; preview.classList.remove('show');
   statusEl.textContent='';
-  $('postcardWrap').classList.remove('flipped');
 });
 
 document.querySelectorAll('.mode-card').forEach(card=>{
@@ -2163,495 +2002,18 @@ document.querySelectorAll('.mode-card').forEach(card=>{
   });
 });
 
-async function generate(){
-  if(!currentDataUrl){ alert('请先放入一张照片'); return; }
-  genBtn.disabled = true;
-  result.classList.remove('show');
-  const t0 = Date.now();
-  const isQuality = currentMode === 'quality';
-  // 模式对应的预估耗时区间
-  const estRange = isQuality ? '30–60 秒' : '15–30 秒';
-  // 分阶段提示文案（按已等待秒数触发），让用户感知"还活着"
-  const tipSchedule = [
-    { at: 0,    msg: '已发送请求，AI 正在分析你的照片…' },
-    { at: 8,    msg: isQuality ? '高质量图像生成中（分辨率较大，耐心等待）…' : '正在绘制抽象风格图像…' },
-    { at: 20,   msg: '继续生成中，同时在为你构思一句哲理文案…' },
-    { at: 40,   msg: '处理较久，后台正在自动重试（无需操作），请再等一下…' },
-    { at: 70,   msg: '仍在努力，上游偶尔拥堵属正常现象，你可以去倒杯水…' },
-    { at: 120,  msg: '超过 2 分钟了，若太久可点中断按钮换快速模式再试' },
-  ];
-  let currentTipIdx = -1;
-  // 在函数作用域声明，确保 setInterval / abort 回调都能访问
-  let controller = new AbortController();
-  let tickTimer = null;
-  // ---- 启动实时计时器（每秒刷新）----
-  tickTimer = setInterval(() => {
-    const elapsed = Math.round((Date.now() - t0) / 1000);
-    // 按秒数推进提示
-    while (currentTipIdx + 1 < tipSchedule.length && elapsed >= tipSchedule[currentTipIdx + 1].at) {
-      currentTipIdx++;
-    }
-    const tip = tipSchedule[currentTipIdx] ? tipSchedule[currentTipIdx].msg : tipSchedule[tipSchedule.length-1].msg;
-    statusEl.innerHTML =
-      '<span class="spinner"></span>' +
-      '用「' + currentSkillName + '」生成中… 已等 ' + elapsed + 's （预估 ' + estRange + '）' +
-      '<br><span style="opacity:0.75;font-size:12px">' + tip + '</span>' +
-      '&nbsp;&nbsp;<a href="javascript:void(0)" id="__abortBtn" style="color:#ff7043;text-decoration:underline;font-size:12px">中断</a>';
-    const ab = document.getElementById('__abortBtn');
-    if (ab) ab.onclick = () => controller.abort(new Error('你已手动中断生成'));
-  }, 1000);
-  // ---- 立即渲染一次（避免等 1s 才出现）----
-  statusEl.innerHTML = '<span class="spinner"></span>用「' + currentSkillName + '」生成中… 已等 0s （预估 ' + estRange + '）<br><span style="opacity:0.75;font-size:12px">'+tipSchedule[0].msg+'</span>';
-  try{
-    // 服务器端会自动重试 3 次（指数退避 3s/6s），最坏情况需等待较久
-    const timeoutId = setTimeout(() => controller.abort(new Error('请求超时（超过 7 分钟未响应），建议稍后重试或切换为快速模式')), 420000);
-    const resp = await fetch('/api/generate', {
-      method:'POST',
-      headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({
-        image: currentDataUrl,
-        text: getCombinedText(),
-        mode: currentMode,
-        skill: skillSel.value,
-        tone: currentTone,
-      }),
-      signal: controller.signal,
-    });
-    clearTimeout(timeoutId);
-    const data = await resp.json();
-    if(!resp.ok || data.error){ throw new Error(data.error || ('HTTP '+resp.status)); }
-
-    clearInterval(tickTimer);
-    statusEl.innerHTML = '<span class="spinner"></span>正在装配明信片画面…';
-    await new Promise(r => setTimeout(r, 200));
-
-    // 处理部分成功：图或文案任一失败也展示已成功的那项，并显示重抽按钮
-    const hasImg = !!data.image;
-    const hasTxt = !!data.sentence;
-    if (hasImg) {
-      $('resultImg').src = data.image;
-      $('resultImg').style.opacity = '1';
-    } else {
-      // 图像失败：显示占位
-      $('resultImg').src = '';
-      $('resultImg').style.opacity = '0.15';
-      $('resultImg').alt = '图像生成失败：' + (data.imageError || '未知错误');
-    }
-    if (hasTxt) {
-      $('resultText').textContent = data.sentence;
-    } else {
-      $('resultText').textContent = '（文案生成失败：' + (data.sentenceError || '未知错误') + '）';
-    }
-    // 重抽按钮：仅当对应项失败时显示
-    $('redoImgBtn').style.display = hasImg ? 'none' : 'inline-block';
-    $('redoTxtBtn').style.display = hasTxt ? 'none' : 'inline-block';
-    // 寄送/分享按钮：至少有图才能寄送/分享
-    $('sendBtn').style.display = hasImg ? 'inline-block' : 'none';
-    $('shareBtn').style.display = hasImg ? 'inline-block' : 'none';
-    $('saveWorkBtn').style.display = hasImg ? 'inline-block' : 'none';
-    $('motionBtn').style.display = hasImg ? 'inline-block' : 'none';
-    motionRegions = [];
-    clearMotionLayers();
-    $('motionPanel').classList.remove('show');
-
-    // 将用户上传的原图填入明信片背面
-    $('originalImg').src = currentRawUrl || currentDataUrl || '';
-    // 生成新明信片时回到正面
-    $('postcardWrap').classList.remove('flipped');
-    const now = new Date();
-    const secs = Math.round((Date.now() - t0)/1000);
-    $('meta').textContent = `${now.getFullYear()}.${String(now.getMonth()+1).padStart(2,'0')}.${String(now.getDate()).padStart(2,'0')}`;
-    result.classList.add('show');
-    statusEl.textContent = data.partial
-      ? `⚠️ 部分完成 · 共 ${secs}s（${hasImg ? '图像✓' : '图像✗'} · ${hasTxt ? '文案✓' : '文案✗'}）`
-      : `✅ 完成 · 共 ${secs}s`;
-
-    lastGenerated = { image: data.image || null, sentence: data.sentence || '', animations: [], audio: null, stamp: '' };
-    setPrivateStamp('');
-    $('stampPanel').classList.remove('show');
-    $('stampBtn').style.display = hasImg ? 'inline-block' : 'none';
-    setPostcardAudio({ url: '', name: '', type: '' });
-    $('audioPanel').classList.add('show');
-    $('audioBtn').style.display = hasImg ? 'inline-block' : 'none';
-    $('audioPlayBtn').style.display = 'none';
-    lastAutoWorkId = null;
-    // 自动保存到我的作品（仅当用户已登录时，避免匿名请求污染作品库）
-    if (hasImg && myNick) {
-      try {
-        const sr = await fetch('/api/myworks', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            ownerNick: myNick,
-            sentence: data.sentence || '',
-            image: data.image,
-            animations: lastGenerated.animations || [],
-            skill: skillSel.value,
-            tone: toneSel.value,
-            visibility: 'public',
-          }),
-        });
-        if (sr.ok) {
-          const saved = await sr.json();
-          lastAutoWorkId = saved.work && saved.work.id;
-          toast('📁 已自动存入「我的作品」', 'ok');
-        }
-      } catch (e) { /* 静默失败 */ }
-    }
-    result.scrollIntoView({behavior:'smooth', block:'nearest'});
-  }catch(err){
-    clearInterval(tickTimer);
-    const elapsed = Math.round((Date.now() - t0)/1000);
-    statusEl.textContent = '❌ 生成失败（等了 ' + elapsed + 's）：' + err.message;
-    toast('生成失败：' + err.message, 'err');
-  }finally{
-    clearInterval(tickTimer);
-    genBtn.disabled = false;
-  }
-}
+async function generate(){ return generateCardImage(); }
 genBtn.addEventListener('click', generate);
 $('againBtn').addEventListener('click', generate);
 
-/* ============ AI 局部动效：分析、预览与移动端实时渲染 ============ */
-const MOTION_ICONS = { spin: '旋转', swing: '摆动', breathe: '呼吸', float: '漂浮' };
-
-function clearMotionLayers(stage = $('motionStage')){
-  if (!stage) return;
-  stage.querySelectorAll('.motion-layer').forEach(el => el.remove());
-}
-
-function renderMotionStage(stage, imageEl, regions){
-  clearMotionLayers(stage);
-  if (!stage) return;
-  stage._motionRegions = Array.isArray(regions) ? regions : [];
-  // #region debug-point B:render-input
-  fetch('/api/debug-motion',{method:'POST',body:JSON.stringify({sessionId:'motion-not-playing',runId:'pre-fix',hypothesisId:'B',location:'index.html:renderMotionStage',msg:'[DEBUG] render input',data:{regionCount:stage._motionRegions.length,naturalWidth:imageEl&&imageEl.naturalWidth,naturalHeight:imageEl&&imageEl.naturalHeight,stageWidth:stage.clientWidth,stageHeight:stage.clientHeight,hidden:document.hidden,masterPlaying:motionMasterPlaying},ts:Date.now()})}).catch(()=>{});
-  // #endregion
-  if (!imageEl || !imageEl.naturalWidth || !imageEl.naturalHeight) return;
-  const stageW = stage.clientWidth, stageH = stage.clientHeight;
-  if (!stageW || !stageH) return;
-  const scale = Math.max(stageW / imageEl.naturalWidth, stageH / imageEl.naturalHeight);
-  const shownW = imageEl.naturalWidth * scale, shownH = imageEl.naturalHeight * scale;
-  const offsetX = (stageW - shownW) / 2, offsetY = (stageH - shownH) / 2;
-  (regions || []).filter(r => r.enabled !== false).forEach(r => {
-    const left = offsetX + (r.x - r.w / 2) * shownW;
-    const top = offsetY + (r.y - r.h / 2) * shownH;
-    const width = r.w * shownW, height = r.h * shownH;
-    if (width < 8 || height < 8 || left + width < 0 || top + height < 0 || left > stageW || top > stageH) return;
-    const layer = document.createElement('div');
-    layer.className = `motion-layer ${r.type} ${r.shape === 'circle' ? 'circle' : ''}`;
-    layer.style.cssText = `left:${left}px;top:${top}px;width:${width}px;height:${height}px;--motion-duration:${r.duration || 1.5}s;--motion-turn:${r.direction < 0 ? '-360deg' : '360deg'}`;
-    const localPivotX = ((r.pivotX - (r.x - r.w / 2)) / r.w) * 100;
-    const localPivotY = ((r.pivotY - (r.y - r.h / 2)) / r.h) * 100;
-    layer.style.setProperty('--pivot-x', Math.max(-100, Math.min(200, localPivotX)) + '%');
-    layer.style.setProperty('--pivot-y', Math.max(-100, Math.min(200, localPivotY)) + '%');
-    const clone = document.createElement('img');
-    clone.src = imageEl.currentSrc || imageEl.src;
-    clone.alt = '';
-    clone.style.width = shownW + 'px'; clone.style.height = shownH + 'px';
-    clone.style.left = (-left + offsetX) + 'px'; clone.style.top = (-top + offsetY) + 'px';
-    layer.appendChild(clone);
-    stage.appendChild(layer);
-  });
-  // #region debug-point C:render-output
-  fetch('/api/debug-motion',{method:'POST',body:JSON.stringify({sessionId:'motion-not-playing',runId:'pre-fix',hypothesisId:'C',location:'index.html:renderMotionStage',msg:'[DEBUG] render output',data:{layerCount:stage.querySelectorAll('.motion-layer').length,pausedClass:stage.classList.contains('motion-paused'),animations:Array.from(stage.querySelectorAll('.motion-layer')).map(el=>({className:el.className,width:el.offsetWidth,height:el.offsetHeight,animationName:getComputedStyle(el).animationName,animationPlayState:getComputedStyle(el).animationPlayState}))},ts:Date.now()})}).catch(()=>{});
-  // #endregion
-  syncMotionPlayback();
-}
-
-function syncMotionPlayback(){
-  const paused = !motionMasterPlaying || document.hidden;
-  document.querySelectorAll('.motion-stage').forEach(stage => stage.classList.toggle('motion-paused', paused));
-  const btn = $('motionMasterBtn');
-  if (btn) { btn.classList.toggle('active', !paused); btn.textContent = paused ? '继续播放' : '全部播放'; }
-}
-
-function renderMotionControls(){
-  const list = $('motionList');
-  list.innerHTML = '';
-  if (!motionRegions.length) {
-    list.innerHTML = '<span class="motion-empty">AI 没有找到可信的局部动态区域。</span>';
-    return;
-  }
-  motionRegions.forEach((r, index) => {
-    const chip = document.createElement('button');
-    chip.className = 'motion-chip' + (r.enabled !== false ? ' active' : '');
-    chip.textContent = `${MOTION_ICONS[r.type] || '动效'} · ${r.name}`;
-    chip.addEventListener('click', e => {
-      e.stopPropagation();
-      motionRegions[index].enabled = motionRegions[index].enabled === false;
-      if (lastGenerated) lastGenerated.animations = motionRegions;
-      if (lastAutoWorkId) {
-        fetch('/api/myworks/' + lastAutoWorkId + '/update', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ animations: motionRegions }),
-        }).catch(() => {});
-      }
-      renderMotionControls();
-      renderMotionStage($('motionStage'), $('resultImg'), motionRegions);
-    });
-    list.appendChild(chip);
-  });
-}
-
-async function analyzeMotion(){
-  if (!lastGenerated || !lastGenerated.image) { toast('请先生成明信片', 'err'); return; }
-  const btn = $('motionBtn');
-  btn.disabled = true; btn.textContent = '分析中…';
-  try {
-    const resp = await fetch('/api/analyze-motion', {
-      method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ image: lastGenerated.image }),
-    });
-    const data = await resp.json();
-    if (!resp.ok || data.error) throw new Error(data.error || '分析失败');
-    motionRegions = Array.isArray(data.regions) ? data.regions : [];
-    // #region debug-point A:analysis-result
-    fetch('/api/debug-motion',{method:'POST',body:JSON.stringify({sessionId:'motion-not-playing',runId:'pre-fix',hypothesisId:'A',location:'index.html:analyzeMotion',msg:'[DEBUG] analysis result',data:{status:resp.status,regionCount:motionRegions.length,regions:motionRegions},ts:Date.now()})}).catch(()=>{});
-    // #endregion
-    lastGenerated.animations = motionRegions;
-    if (lastAutoWorkId) {
-      fetch('/api/myworks/' + lastAutoWorkId + '/update', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ animations: motionRegions }),
-      }).catch(() => {});
-    }
-    $('motionPanel').classList.add('show');
-    renderMotionControls();
-    renderMotionStage($('motionStage'), $('resultImg'), motionRegions);
-    toast(motionRegions.length ? `找到 ${motionRegions.length} 处可动区域` : '没有找到适合的局部动效', motionRegions.length ? 'ok' : 'err');
-  } catch (e) { toast('动效分析失败：' + e.message, 'err'); }
-  finally { btn.disabled = false; btn.textContent = '✨ AI 动效'; }
-}
-
-$('motionBtn').addEventListener('click', analyzeMotion);
-$('motionMasterBtn').addEventListener('click', e => { e.stopPropagation(); motionMasterPlaying = !motionMasterPlaying; syncMotionPlayback(); });
-$('resultImg').addEventListener('load', () => renderMotionStage($('motionStage'), $('resultImg'), motionRegions));
-document.addEventListener('visibilitychange', syncMotionPlayback);
-window.addEventListener('resize', () => requestAnimationFrame(() => renderMotionStage($('motionStage'), $('resultImg'), motionRegions)));
-const motionObserver = new IntersectionObserver(entries => entries.forEach(entry => {
-  entry.target.classList.toggle('motion-paused', !entry.isIntersecting || !motionMasterPlaying || document.hidden);
-  if (entry.isIntersecting && !entry.target.querySelector('.motion-layer')) {
-    const imageEl = entry.target.querySelector('.motion-base');
-    const regions = entry.target._motionRegions;
-    if (imageEl && Array.isArray(regions) && regions.length) renderMotionStage(entry.target, imageEl, regions);
-  }
-}), { threshold: 0.02 });
-motionObserver.observe($('motionStage'));
-
-/* ============ 功能10：单独重抽图像 / 文案 ============ */
-async function regenerateImage(){
-  if(!currentDataUrl){ toast('请先放入一张照片', 'err'); return; }
-  const btn = $('redoImgBtn');
-  btn.disabled = true; btn.textContent = '🎨 重抽中…';
-  statusEl.innerHTML = '<span class="spinner"></span>正在重抽图像…';
-  const t0 = Date.now();
-  try{
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(new Error('重抽图像超时')), 420000);
-    const resp = await fetch('/api/generate-image', {
-      method:'POST',
-      headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({
-        image: currentDataUrl,
-        text: getCombinedText(),
-        mode: currentMode,
-        skill: skillSel.value,
-      }),
-      signal: controller.signal,
-    });
-    clearTimeout(timeoutId);
-    const data = await resp.json();
-    if(!resp.ok || data.error) throw new Error(data.error || ('HTTP '+resp.status));
-    $('resultImg').src = data.image;
-    $('resultImg').style.opacity = '1';
-    btn.style.display = 'none';
-    motionRegions = [];
-    lastAutoWorkId = null;
-    clearMotionLayers();
-    $('motionPanel').classList.remove('show');
-    if (lastGenerated) { lastGenerated.image = data.image; lastGenerated.animations = []; }
-    else lastGenerated = { image: data.image, sentence: '', animations: [] };
-    $('motionBtn').style.display = 'inline-block';
-    $('sendBtn').style.display = 'inline-block';
-    $('shareBtn').style.display = 'inline-block';
-    statusEl.textContent = `✅ 图像重抽完成 · ${Math.round((Date.now()-t0)/1000)}s`;
-    toast('图像已重新生成', 'ok');
-  }catch(e){
-    statusEl.textContent = '❌ 重抽失败：' + e.message;
-    toast('重抽失败：' + e.message, 'err');
-  }finally{
-    btn.disabled = false; btn.textContent = '🎨 重抽图像';
-  }
-}
-
-async function regenerateSentence(){
-  if(!currentDataUrl){ toast('请先放入一张照片', 'err'); return; }
-  const btn = $('redoTxtBtn');
-  btn.disabled = true; btn.textContent = '✍️ 重抽中…';
-  statusEl.innerHTML = '<span class="spinner"></span>正在重抽文案…';
-  const t0 = Date.now();
-  try{
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(new Error('重抽文案超时')), 120000);
-    const resp = await fetch('/api/generate-sentence', {
-      method:'POST',
-      headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({
-        image: currentDataUrl,
-        text: getCombinedText(),
-        tone: currentTone,
-      }),
-      signal: controller.signal,
-    });
-    clearTimeout(timeoutId);
-    const data = await resp.json();
-    if(!resp.ok || data.error) throw new Error(data.error || ('HTTP '+resp.status));
-    $('resultText').textContent = data.sentence;
-    btn.style.display = 'none';
-    if (lastGenerated) lastGenerated.sentence = data.sentence;
-    else lastGenerated = { image: null, sentence: data.sentence, animations: [] };
-    statusEl.textContent = `✅ 文案重抽完成 · ${Math.round((Date.now()-t0)/1000)}s`;
-    toast('文案已重新生成', 'ok');
-  }catch(e){
-    statusEl.textContent = '❌ 重抽失败：' + e.message;
-    toast('重抽失败：' + e.message, 'err');
-  }finally{
-    btn.disabled = false; btn.textContent = '✍️ 重抽文案';
-  }
-}
-$('redoImgBtn').addEventListener('click', regenerateImage);
-$('redoTxtBtn').addEventListener('click', regenerateSentence);
-
-/* ============ 明信片翻转：点击切换正反面 ============ */
-$('postcardWrap').addEventListener('click', (e)=>{
-  // 避免误触：如果点击的是按钮区域内的元素则不翻转
-  if (e.target.closest('.cardbar')) return;
-  $('postcardWrap').classList.toggle('flipped');
-});
-
+/* ============ 复制与导出 ============ */
 $('copyBtn').addEventListener('click', async ()=>{
-  const t = $('resultText').textContent;
+  const t = $('personalMessage').value;
   try{ await navigator.clipboard.writeText(t); toast('已复制：'+t, 'ok'); }
   catch(e){ alert('复制失败，请手动选择'); }
 });
 
-$('saveBtn').addEventListener('click', async ()=>{
-  const img = $('resultImg');
-  if(!img.src){ alert('还没有图片'); return; }
-  const sentence = $('resultText').textContent;
-  // 预加载所选字体，确保 canvas 能正确渲染
-  try{
-    await Promise.all([
-      document.fonts.load('30px ' + fontEn),
-      document.fonts.load('30px ' + fontCn),
-      document.fonts.load('15px ' + fontDate),
-      document.fonts.load('70px ' + fontEn),
-    ]);
-    await document.fonts.ready;
-  }catch(e){ /* 字体加载失败时退回系统字体，继续渲染 */ }
-  const quoteFontStack = fontEn + ', ' + fontCn + ', Georgia, serif';
-  const dateFontStack = fontDate + ', Georgia, serif';
-  const canvas = document.createElement('canvas');
-  const W = 1400, H = 900;
-  canvas.width = W; canvas.height = H;
-  const ctx = canvas.getContext('2d');
-  ctx.fillStyle = '#F3F0E8'; ctx.fillRect(0,0,W,H);
-  const imgW = Math.floor(W*0.52);
-  const im = new Image();
-  im.crossOrigin = 'anonymous';
-  im.onload = ()=>{
-    ctx.fillStyle='#000'; ctx.fillRect(0,0,imgW,H);
-    const r = Math.max(imgW/im.width, H/im.height);
-    const dw = im.width*r, dh = im.height*r;
-    ctx.drawImage(im, (imgW-dw)/2, (H-dh)/2, dw, dh);
-
-    const tx = imgW + 50;
-    ctx.fillStyle = '#7A5A3A';
-    ctx.font = '11px Georgia, serif';
-    ctx.textAlign='right';
-    ctx.fillText('EDITORIAL', W-50, 60);
-    ctx.textAlign='left';
-
-    // 明信片格式：右侧写字区，文字坐在横线上
-    ctx.fillStyle = '#2B2A28';
-    ctx.font = '28px ' + quoteFontStack;
-    // 行高放大到 70，给横线留位置；文字基线即横线 y
-    const lineX = tx + 40;
-    const lineRight = W - 70;
-    const lineH = 70;
-    const firstLineY = 230;
-    wrapTextOnLines(ctx, sentence, lineX, firstLineY, lineRight - lineX, lineH);
-
-    // 底部日期（保留）
-    ctx.fillStyle='#5A554E'; ctx.font='15px ' + dateFontStack;
-    ctx.fillText($('meta').textContent, lineX, H-78);
-
-    if (postcardStamp) {
-      ctx.save();
-      ctx.translate(imgW + 82, H - 78);
-      ctx.rotate(-6 * Math.PI / 180);
-      ctx.strokeStyle = '#7A5A3A'; ctx.lineWidth = 3;
-      ctx.beginPath(); ctx.ellipse(0, 0, 88, 28, 0, 0, Math.PI * 2); ctx.stroke();
-      ctx.fillStyle = '#7A5A3A'; ctx.font = 'bold 14px "Microsoft YaHei", sans-serif'; ctx.textAlign = 'center';
-      ctx.fillText(postcardStamp, 0, 5, 150);
-      ctx.restore();
-    }
-
-    const link = document.createElement('a');
-    link.download = 'postcard-'+Date.now()+'.png';
-    link.href = canvas.toDataURL('image/png');
-    link.click();
-  };
-  im.onerror = ()=> alert('图片加载失败，无法保存');
-  im.src = img.src;
-});
-
-function wrapTextOnLines(ctx, text, x, y, maxW, lineH){
-  // 先按 \n 和宽度拆出所有行
-  const rawLines = String(text || '').split('\n');
-  const out = [];
-  for(const raw of rawLines){
-    let line = '';
-    for(let i=0;i<raw.length;i++){
-      const ch = raw[i];
-      const test = line + ch;
-      if(ctx.measureText(test).width > maxW && line){
-        out.push(line); line = ch;
-      } else { line = test; }
-    }
-    out.push(line);
-  }
-
-  // 横线样式（明信片预印横线感）
-  ctx.strokeStyle = '#C9C2B0';
-  ctx.lineWidth = 1;
-
-  let yy = y;
-  for(const ln of out){
-    // 文字坐在横线上（基线对齐横线）
-    ctx.fillStyle = '#2B2A28';
-    ctx.fillText(ln, x, yy);
-    // 该行对应的横线
-    ctx.beginPath();
-    ctx.moveTo(x, yy + 6);
-    ctx.lineTo(x + maxW, yy + 6);
-    ctx.stroke();
-    yy += lineH;
-  }
-
-  // 下方补齐空白横线直到接近底部日期（明信片格式感）
-  const bottomLimit = 900 - 110; // H - 110，给底部日期留空
-  while(yy < bottomLimit){
-    ctx.beginPath();
-    ctx.moveTo(x, yy + 6);
-    ctx.lineTo(x + maxW, yy + 6);
-    ctx.stroke();
-    yy += lineH;
-  }
-}
+$('saveBtn').addEventListener('click', () => exportCardImage(cardPayload()));
 
 /* ==============================================================
    分享弹窗
@@ -2670,7 +2032,7 @@ $('shareBtn').addEventListener('click', () => {
 });
 
 $('shConfirmBtn').addEventListener('click', async () => {
-  if (!lastGenerated) return;
+  if (!lastGenerated || !audioReady()) return;
   if (!requireLogin('登录后才能分享到社区')) return;
   const btn = $('shConfirmBtn');
   btn.disabled = true;
@@ -2684,10 +2046,7 @@ $('shConfirmBtn').addEventListener('click', async () => {
         author,
         title: $('shTitle').value.trim(),
         description: $('shDesc').value.trim(),
-        sentence: lastGenerated.sentence,
-        image: lastGenerated.image,
-        animations: lastGenerated.animations || [],
-        stamp: lastGenerated.stamp || '',
+        ...cardPayload(),
       })
     });
     const data = await resp.json();
@@ -2952,7 +2311,7 @@ function buildPostCard(p) {
   card.className = 'post-card';
   const liked = Array.isArray(p.likers) && p.likers.includes(myNick || 'visitor');
   card.innerHTML = `
-    <div class="pimg"><div class="motion-stage"><img class="motion-base" src="${p.image}" alt="" loading="lazy"></div></div>
+    <div class="pimg"><img src="${p.image}" alt="" loading="lazy"></div>
     <div class="pbody">
       ${p.title ? `<div class="ptitle"></div>` : ''}
       ${p.sentence ? `<div class="psentence"></div>` : ''}
@@ -2978,14 +2337,6 @@ function buildPostCard(p) {
   card.querySelector('.av').textContent = avatarOf(p.author);
   card.querySelector('.nm').textContent = p.author;
   card.querySelector('.tm').textContent = formatTime(p.createdAt);
-  const communityStage = card.querySelector('.motion-stage');
-  const communityImg = card.querySelector('.motion-base');
-  if (Array.isArray(p.animations) && p.animations.length) {
-    const startCommunityMotion = () => renderMotionStage(communityStage, communityImg, p.animations);
-    if (communityImg.complete) requestAnimationFrame(startCommunityMotion);
-    else communityImg.addEventListener('load', startCommunityMotion, { once: true });
-    motionObserver.observe(communityStage);
-  }
   // 功能9：作者名可点击进入主页
   const authorEl = card.querySelector('.author');
   if (authorEl && p.author && p.author !== '匿名用户') {
@@ -3062,7 +2413,7 @@ async function openDetail(postId) {
   $('dTitle').textContent = post.title || '帖子详情';
   const wrap = $('dWrap');
   wrap.innerHTML = `
-    <div class="detail-img-wrap"><img src="${post.image}" alt=""></div>
+    <div class="detail-card"></div>
     <div class="detail-meta">
       <div class="by">
         <span class="av">${avatarOf(post.author)}</span>
@@ -3071,7 +2422,6 @@ async function openDetail(postId) {
       </div>
     </div>
     ${post.title ? `<div class="detail-title"></div>` : ''}
-    ${post.sentence ? `<div class="detail-sentence"></div>` : ''}
     ${post.description ? `<div class="detail-desc"></div>` : ''}
     <div class="detail-stats">
       <div class="st like ${liked ? 'liked' : ''}">
@@ -3085,7 +2435,7 @@ async function openDetail(postId) {
     </div>`;
   wrap.querySelector('.name').textContent = post.author;
   if (post.title) wrap.querySelector('.detail-title').textContent = post.title;
-  if (post.sentence) wrap.querySelector('.detail-sentence').textContent = post.sentence;
+  wrap.querySelector('.detail-card').appendChild(createCardView(post));
   if (post.description) wrap.querySelector('.detail-desc').textContent = post.description;
 
   // 绑定详情里的点赞
@@ -3228,11 +2578,20 @@ $('compareBtn').addEventListener('click', () => {
 });
 
 $('cmpStartBtn').addEventListener('click', async () => {
+  const compareRevision = photoRevision, compareOriginal = currentRawUrl || currentDataUrl;
+  let compareSource = currentDataUrl;
   if (cmpState.running) return;
   const ids = Array.from(cmpState.picked);
   if (ids.length < 2) { toast('至少勾选 2 个风格才能对比', 'err'); return; }
   if (ids.length > 4) { toast('最多对比 4 个风格', 'err'); return; }
   if (!currentDataUrl) { toast('请先放入照片', 'err'); return; }
+  if (!compareSource.startsWith('data:')) {
+    try {
+      const response = await fetch(compareSource);
+      if (!response.ok) throw new Error('原图加载失败');
+      compareSource = (await compressImage(await response.blob())).dataUrl;
+    } catch (error) { toast(error.message, 'err'); return; }
+  }
   cmpState.running = true;
   const btn = $('cmpStartBtn');
   btn.disabled = true;
@@ -3271,7 +2630,7 @@ $('cmpStartBtn').addEventListener('click', async () => {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          image: currentDataUrl,
+          image: compareSource,
           text: $('text').value,
           mode: currentMode,
           skill: id,
@@ -3290,20 +2649,8 @@ $('cmpStartBtn').addEventListener('click', async () => {
       // 绑定"设为主图"
       cell.querySelector('.cmp-use').addEventListener('click', () => {
         selectSkill(id);
-        $('resultImg').src = data.image;
-        $('resultImg').style.opacity = '1';
-        motionRegions = [];
-        lastAutoWorkId = null;
-        clearMotionLayers();
-        $('motionPanel').classList.remove('show');
-        if (lastGenerated) {
-          lastGenerated.image = data.image;
-          lastGenerated.animations = [];
-        } else {
-          lastGenerated = { image: data.image, sentence: '', animations: [] };
-        }
-        $('motionBtn').style.display = 'inline-block';
-        result.classList.add('show');
+        if (compareRevision !== photoRevision) { toast('照片已更换，请重新生成对比', 'err'); return; }
+        adoptGeneratedImage(data.image, compareOriginal, id);
         closeModal(compareModal);
         toast('已设为主图，可在下方继续配文案', 'ok');
       });
@@ -3342,7 +2689,7 @@ $('sendBtn').addEventListener('click', () => {
 });
 
 $('sdConfirmBtn').addEventListener('click', async () => {
-  if (!lastGenerated || !lastGenerated.image) return;
+  if (!lastGenerated || !lastGenerated.image || !audioReady()) return;
   const btn = $('sdConfirmBtn');
   btn.disabled = true; btn.textContent = '寄出中…';
   try {
@@ -3350,11 +2697,7 @@ $('sdConfirmBtn').addEventListener('click', async () => {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        image: lastGenerated.image,
-        sentence: lastGenerated.sentence || '',
-        animations: lastGenerated.animations || [],
-        audio: lastGenerated.audio || null,
-        stamp: lastGenerated.stamp || '',
+        ...cardPayload(),
         fromName: $('sdFromName').value.trim() || myNick || '匿名',
         toName: $('sdToName').value.trim() || '朋友',
         message: $('sdMessage').value.trim(),
@@ -3430,7 +2773,7 @@ function showEnvelope(card) {
       </div>
       <div class="env-front"></div>
       <div class="env-flap"></div>
-      <div class="env-seal" id="envSeal" title="点击拆开">💌</div>
+      <button class="env-seal" id="envSeal" title="点击拆开">💌</button>
     </div>
     <div class="env-card-display" id="envCardDisp" style="display:none"></div>`;
   $('envFrom').textContent = fromName;
@@ -3442,42 +2785,15 @@ function showEnvelope(card) {
     setTimeout(() => {
       const disp = $('envCardDisp');
       disp.style.display = 'block';
-      let html = `<div class="motion-stage" style="aspect-ratio:1"><img class="motion-base" src="${card.image}" alt=""></div>`;
-      if (card.sentence) html += `<div class="env-sentence" style="font-family:Georgia,serif;font-style:italic;margin-top:14px;color:var(--ink);font-size:16px;line-height:1.6;white-space:pre-line"></div>`;
-      if (card.message) html += `<div class="env-meta env-message" style="font-style:italic;margin-top:10px"></div>`;
-      if (card.stamp) html += `<div class="private-stamp env-private-stamp" style="position:relative;left:auto;bottom:auto;display:inline-block;margin-top:14px"></div>`;
-      if (card.audio && card.audio.url) html += `<div style="margin-top:14px"><button class="btn-primary" id="envAudioBtn">▶ 播放 ${card.audio.name || '声音'}</button><audio id="envAudio" src="${card.audio.url}"></audio></div>`;
-      html += `<div class="env-meta" style="margin-top:10px">📅 ${formatTime(card.createdAt)}${card.opened ? ' · 已拆开' : ' · 首次拆开'}</div>`;
-      html += `<div style="margin-top:16px"><button class="btn-primary" id="envDownloadBtn" style="padding:10px 22px">⬇ 保存这张明信片</button></div>`;
-      disp.innerHTML = html;
-      if (card.sentence) disp.querySelector('.env-sentence').textContent = card.sentence;
-      if (card.message) disp.querySelector('.env-message').textContent = '「' + card.message + '」';
-      if (card.stamp) disp.querySelector('.env-private-stamp').textContent = card.stamp;
-      const envAudioBtn = $('envAudioBtn'), envAudio = $('envAudio');
-      if (envAudioBtn && envAudio) envAudioBtn.addEventListener('click', () => {
-        if (envAudio.paused) { envAudio.play(); envAudioBtn.textContent = '⏸ 暂停声音'; }
-        else { envAudio.pause(); envAudioBtn.textContent = '▶ 播放 ' + ((card.audio && card.audio.name) || '声音'); }
-      });
-      const giftStage = disp.querySelector('.motion-stage');
-      const giftImg = disp.querySelector('.motion-base');
-      if (Array.isArray(card.animations) && card.animations.length) {
-        const startGiftMotion = () => renderMotionStage(giftStage, giftImg, card.animations);
-        if (giftImg.complete) requestAnimationFrame(startGiftMotion);
-        else giftImg.addEventListener('load', startGiftMotion, { once: true });
-        motionObserver.observe(giftStage);
-      }
-      const dl = $('envDownloadBtn');
-      if (dl) dl.addEventListener('click', () => {
-        const a = document.createElement('a');
-        a.href = card.image;
-        a.download = 'postcard-' + (card.code || 'gift') + '.png';
-        a.click();
-      });
+      disp.replaceChildren(createCardView(card));
+      if (card.message) { const note = document.createElement('p'); note.textContent = card.message; disp.appendChild(note); }
+      const dl = document.createElement('button'); dl.className = 'btn-primary'; dl.textContent = '保存这张明信片';
+      dl.addEventListener('click', () => exportCardImage(card)); disp.appendChild(dl);
     }, 650);
   });
   $('envelopeModal').classList.add('show');
 }
-checkIncomingCard();
+window.addEventListener('DOMContentLoaded', checkIncomingCard);
 
 /* ==============================================================
    功能9：作者主页
@@ -3657,13 +2973,6 @@ $('batchDlAllBtn').addEventListener('click', () => {
    ============================================================== */
 let mineState = { works: [], loading: false };
 
-// #region debug-point D:global-share-click-capture
-document.addEventListener('click', e => {
-  const share = e.target.closest && e.target.closest('.work-card .share');
-  if (!share) return;
-  fetch('/api/debug-motion',{method:'POST',body:JSON.stringify({sessionId:'community-share-click',runId:'pre-fix',hypothesisId:'D',location:'index.html:document-capture',msg:'[DEBUG] global share click captured',data:{targetTag:e.target.tagName,targetClass:e.target.className,buttonConnected:share.isConnected},ts:Date.now()})}).catch(()=>{});
-}, true);
-// #endregion
 
 // Tab 切换钩子（已合并至 switchView）
 
@@ -3709,7 +3018,7 @@ function buildWorkCard(w) {
   card.className = 'work-card';
   const isPublic = w.visibility !== 'private';
   card.innerHTML = `
-    <div class="w-img"><div class="motion-stage"><img class="motion-base" src="${w.image}" alt="" loading="lazy"></div></div>
+    <div class="w-img"><img src="${w.image}" alt="" loading="lazy"></div>
     <div class="w-body">
       <div class="w-sentence"></div>
       <div class="w-meta">
@@ -3720,25 +3029,15 @@ function buildWorkCard(w) {
       </div>
     </div>
     <div class="w-actions">
-      <button class="toggle-vis">${isPublic ? '🔒 设为私密' : '🌐 设为公开'}</button>
+      <button class="edit-work">继续编辑</button><button class="toggle-vis">${isPublic ? '🔒 设为私密' : '🌐 设为公开'}</button>
       <button class="share">${w.postId ? '🔁 重发' : '📤 分享到社区'}</button>
       <button class="danger">🗑 删除</button>
     </div>`;
   if (w.sentence) card.querySelector('.w-sentence').textContent = w.sentence;
-  const workStage = card.querySelector('.motion-stage');
-  const workImg = card.querySelector('.motion-base');
-  if (Array.isArray(w.animations) && w.animations.length) {
-    const startWorkMotion = () => renderMotionStage(workStage, workImg, w.animations);
-    if (workImg.complete) requestAnimationFrame(startWorkMotion);
-    else workImg.addEventListener('load', startWorkMotion, { once: true });
-    motionObserver.observe(workStage);
-  }
   card.querySelector('.w-img').addEventListener('click', () => openWorkPostcard(w));
+  card.querySelector('.edit-work').addEventListener('click', () => editCardDraft(w));
   card.querySelector('.toggle-vis').addEventListener('click', () => updateWorkVis(w, card));
   card.querySelector('.share').addEventListener('click', () => {
-    // #region debug-point A:share-button-click
-    fetch('/api/debug-motion',{method:'POST',body:JSON.stringify({sessionId:'community-share-click',runId:'pre-fix',hypothesisId:'A',location:'index.html:buildWorkCard',msg:'[DEBUG] share button clicked',data:{workId:w.id,hasImage:!!w.image,postId:w.postId||null},ts:Date.now()})}).catch(()=>{});
-    // #endregion
     openShareWorkModal(w);
   });
   card.querySelector('.danger').addEventListener('click', () => deleteWork(w, card));
@@ -3782,54 +3081,20 @@ async function deleteWork(w, card) {
 }
 
 // 手动「存到作品库」按钮
-$('saveWorkBtn').addEventListener('click', async () => {
-  if (!lastGenerated || !lastGenerated.image) { toast('当前没有可保存的明信片', 'err'); return; }
-  if (!requireLogin('登录后才能保存作品')) return;
-  try {
-    const resp = await fetch('/api/myworks', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        ownerNick: myNick,
-        sentence: lastGenerated.sentence || '',
-        image: lastGenerated.image,
-        animations: lastGenerated.animations || [],
-        skill: skillSel.value,
-        tone: toneSel.value,
-        visibility: 'public',
-      }),
-    });
-    const data = await resp.json();
-    if (!resp.ok) throw new Error(data.error || '保存失败');
-    toast('📁 已存入「我的作品」', 'ok');
-  } catch (e) { toast(e.message, 'err'); }
-});
+$('saveWorkBtn').addEventListener('click', saveCardDraft);
 
 // 「我的作品 → 分享到社区」弹窗
 let currentShareWork = null;
 function openShareWorkModal(w) {
   currentShareWork = w;
-  // #region debug-point B:share-modal-open
-  fetch('/api/debug-motion',{method:'POST',body:JSON.stringify({sessionId:'community-share-click',runId:'pre-fix',hypothesisId:'B',location:'index.html:openShareWorkModal',msg:'[DEBUG] opening share modal',data:{workId:w&&w.id,modalExists:!!$('shareWorkModal'),confirmExists:!!$('swConfirmBtn')},ts:Date.now()})}).catch(()=>{});
-  // #endregion
   $('swImg').src = w.image;
   $('swSentence').textContent = w.sentence || '…';
   $('swTitle').value = w.title || '';
   $('swDesc').value = '';
   const modal = $('shareWorkModal');
   modal.classList.add('show');
-  // #region debug-point E:share-modal-layout
-  requestAnimationFrame(() => {
-    const style = getComputedStyle(modal);
-    const rect = modal.getBoundingClientRect();
-    fetch('/api/debug-motion',{method:'POST',body:JSON.stringify({sessionId:'community-share-click',runId:'pre-fix',hypothesisId:'E',location:'index.html:openShareWorkModal',msg:'[DEBUG] share modal computed layout',data:{className:modal.className,display:style.display,visibility:style.visibility,opacity:style.opacity,zIndex:style.zIndex,width:rect.width,height:rect.height,top:rect.top,left:rect.left},ts:Date.now()})}).catch(()=>{});
-  });
-  // #endregion
 }
 $('swConfirmBtn').addEventListener('click', async () => {
-  // #region debug-point C:share-confirm-click
-  fetch('/api/debug-motion',{method:'POST',body:JSON.stringify({sessionId:'community-share-click',runId:'pre-fix',hypothesisId:'C',location:'index.html:swConfirmBtn',msg:'[DEBUG] share confirm clicked',data:{hasCurrentWork:!!currentShareWork,workId:currentShareWork&&currentShareWork.id},ts:Date.now()})}).catch(()=>{});
-  // #endregion
   if (!currentShareWork) return;
   const btn = $('swConfirmBtn');
   btn.disabled = true; btn.textContent = '发布中…';
@@ -4029,13 +3294,13 @@ function renderGallery(posts) {
       </div>
       <div class="g-body">
         ${p.featuredNote ? '<div class="g-note"></div>' : ''}
-        ${p.sentence ? '<div style="font-style:italic;color:var(--ink);margin-bottom:8px;font-size:13px;line-height:1.5;white-space:pre-line"></div>' : ''}
+        ${p.sentence ? '<div class="gallery-message"></div>' : ''}
         <div class="g-author">by <b></b> · ${formatTime(p.createdAt)}${p.likes ? ' · ❤️ ' + p.likes : ''}</div>
       </div>`;
     if (p.featuredNote) card.querySelector('.g-note').textContent = '「' + p.featuredNote + '」';
-    if (p.sentence) card.querySelector('.g-body > div:nth-child(2)').textContent = p.sentence;
+    if (p.sentence) card.querySelector('.gallery-message').textContent = p.sentence;
     card.querySelector('.g-author b').textContent = p.author;
-    card.querySelector('.g-img').addEventListener('click', () => openDetail(p.id));
+    card.querySelector('.g-img').addEventListener('click', () => openWorkPostcard(p));
     grid.appendChild(card);
   });
   box.innerHTML = '';
@@ -4067,111 +3332,9 @@ $('galFeatureOnBtn').addEventListener('click', () => adminFeature(true));
 $('galFeatureOffBtn').addEventListener('click', () => adminFeature(false));
 
 /* ==============================================================
-   标签 / 心情关键词
+   画面补充说明
    ============================================================== */
-const moodState = {
-  selected: new Set(JSON.parse(localStorage.getItem('moodTags') || '[]')),
-};
-// 把标签集合 + 自写描述合并为最终传给 AI 的 text 参数
-function getCombinedText() {
-  const custom = ($('text').value || '').trim();
-  const tags = [...moodState.selected];
-  if (tags.length === 0) return custom;
-  // 拼接成自然的中文短语
-  const prefix = '【关键词】' + tags.join('，') + '。';
-  if (!custom) return prefix;
-  return prefix + '\n【补充描述】' + custom;
-}
-// 渲染所有 chip 的选中态、顶部已选胶囊、计数、清空按钮
-function renderMood() {
-  document.querySelectorAll('.mood-wrap .chip').forEach(el => {
-    const v = el.dataset.v;
-    el.classList.toggle('active', moodState.selected.has(v));
-  });
-  const sel = $('moodSelected');
-  const chips = [...moodState.selected];
-  if (chips.length === 0) {
-    sel.style.display = 'none';
-    sel.innerHTML = '';
-    $('moodClearBtn').style.display = 'none';
-  } else {
-    sel.style.display = 'flex';
-    sel.innerHTML = chips.map(v => {
-      // 找对应 chip 的完整显示文本（含 emoji）
-      const chipEl = document.querySelector('.mood-wrap .chip[data-v="' + v.replace(/"/g, '\\"') + '"]');
-      const label = chipEl ? chipEl.textContent : v;
-      return `<span class="ms-chip" data-v="${escapeHtml(v)}">${label}<span class="ms-x">×</span></span>`;
-    }).join('');
-    sel.querySelectorAll('.ms-chip').forEach(el => {
-      el.addEventListener('click', () => {
-        moodState.selected.delete(el.dataset.v);
-        saveMood();
-        renderMood();
-      });
-    });
-    $('moodClearBtn').style.display = 'inline-block';
-  }
-  $('moodSelectedHint').textContent = '已选 ' + chips.length + ' 个';
-}
-function saveMood() {
-  try { localStorage.setItem('moodTags', JSON.stringify([...moodState.selected])); } catch (e) { /* ignore */ }
-}
-// 折叠/展开
-$('moodToggle').addEventListener('click', () => {
-  document.querySelector('.mood-wrap').classList.toggle('collapsed');
-});
-
-/* ============ 风格设置折叠区 ============ */
-(function () {
-  const wrap = $('settingsWrap');
-  const toggle = $('settingsToggle');
-  if (!wrap || !toggle) return;
-  toggle.addEventListener('click', () => wrap.classList.toggle('collapsed'));
-  // 手机端（≤768px）默认收起，桌面端展开
-  if (window.innerWidth <= 768) wrap.classList.add('collapsed');
-})();
-// 默认展开或折叠根据 localStorage
-(function () {
-  try {
-    if (localStorage.getItem('moodCollapsed') === '1') {
-      document.querySelector('.mood-wrap').classList.add('collapsed');
-    }
-  } catch (e) {}
-})();
-document.querySelector('.mood-wrap').addEventListener('click', e => {
-  // 监听折叠状态持久化
-  setTimeout(() => {
-    const c = document.querySelector('.mood-wrap').classList.contains('collapsed');
-    try { localStorage.setItem('moodCollapsed', c ? '1' : '0'); } catch {}
-  }, 0);
-}, true);
-// 点击 chip 切换选中
-document.querySelectorAll('.mood-wrap .chip').forEach(el => {
-  el.addEventListener('click', e => {
-    e.stopPropagation(); // 不触发折叠
-    const v = el.dataset.v;
-    if (moodState.selected.has(v)) moodState.selected.delete(v);
-    else moodState.selected.add(v);
-    saveMood();
-    renderMood();
-  });
-});
-// 清空按钮
-$('moodClearBtn').addEventListener('click', e => {
-  e.stopPropagation();
-  moodState.selected.clear();
-  saveMood();
-  renderMood();
-});
-// 初始化：首次打开页面时恢复标签选中态
-window.addEventListener('DOMContentLoaded', () => {
-  // 延迟到所有 DOM 就绪
-  setTimeout(renderMood, 0);
-});
-// 若 DOMContentLoaded 已经过了也兜底执行一次
-if (document.readyState === 'interactive' || document.readyState === 'complete') {
-  setTimeout(renderMood, 0);
-}
+function getCombinedText() { return $('text').value.trim(); }
 
 /* ==============================================================
    通用工具：HTML 转义 + 图片预览
@@ -4180,50 +3343,15 @@ function escapeHtml(s) {
   return String(s || '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 }
 function openWorkPostcard(w) {
-  let m = document.getElementById('workPreviewModal');
+  let m = $('workPreviewModal');
   if (!m) {
-    m = document.createElement('div');
-    m.id = 'workPreviewModal';
-    m.className = 'modal-mask';
-    m.innerHTML = `
-      <div class="modal" style="max-width:960px">
-        <div class="mhead">
-          <h3>明信片预览</h3>
-          <button class="close" data-close>×</button>
-        </div>
-        <div class="mbody" style="padding:22px">
-          <div class="postcard-wrap work-preview-wrap">
-            <div class="postcard work-preview-card">
-              <div class="pc-face pc-front">
-                <div class="pc-img">
-                  <div class="motion-stage" id="workPreviewStage">
-                    <img id="workPreviewImg" class="motion-base" alt="明信片图片">
-                  </div>
-                </div>
-                <div class="pc-text">
-                  <div class="stamp">POST<br>CARD</div>
-                  <div class="corner">Editorial</div>
-                  <div class="quote" id="workPreviewText"></div>
-                  <div class="divider"></div>
-                  <div class="meta">由照片与文字生成</div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>`;
+    m = document.createElement('div'); m.id = 'workPreviewModal'; m.className = 'modal-mask';
+    m.innerHTML = '<div class="modal" style="max-width:960px"><div class="mhead"><h3>明信片</h3><button data-close class="close">×</button></div><div class="mbody"></div></div>';
     document.body.appendChild(m);
-    m.addEventListener('click', e => { if (e.target === m) m.classList.remove('show'); });
-    m.querySelector('[data-close]').addEventListener('click', () => m.classList.remove('show'));
+    m.addEventListener('click', e => { if(e.target === m || e.target.closest('[data-close]')) closeModal(m); });
   }
-  const img = m.querySelector('#workPreviewImg');
-  const stage = m.querySelector('#workPreviewStage');
-  img.src = w.image || '';
-  m.querySelector('#workPreviewText').textContent = w.sentence || '（无文案）';
+  m.querySelector('.mbody').replaceChildren(createCardView(w));
   m.classList.add('show');
-  const render = () => renderMotionStage(stage, img, Array.isArray(w.animations) ? w.animations : []);
-  if (img.complete) requestAnimationFrame(render);
-  else img.addEventListener('load', render, { once: true });
 }
 
 function openImagePreview(src) {
