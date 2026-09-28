@@ -121,7 +121,7 @@ export function setupLibrary({ getDraft, loadDraft, markStored, applyPreferences
         } else failures.push('寄收记录加载失败');
         items.sort((a, b) => b.item.createdAt - a.item.createdAt);
         $('galleryList').append(...items.map(({ item, kind }) => listItem(item, kind))); $('galleryStatus').textContent = failures.join('；');
-        if (!items.length && !failures.length) empty(filter === 'sent' ? '还没有寄出的心意' : filter === 'received' ? '等待一封，写给你的信' : '好好收着，自己的每一张', filter === 'sent' ? '从卡片下方的「保存 / 分享 / 寄送」创建链接或寄送邮件，记录会留在这里。' : filter === 'received' ? '打开收到的明信片，点「收进我的展览馆」，便能在这里珍藏。' : '完成卡片后，点上方「存为作品」，就能在这里继续编辑。');
+        if (!items.length && !failures.length) empty(filter === 'sent' ? '还没有寄出的心意' : filter === 'received' ? '等待一封，写给你的信' : '好好收着，自己的每一张', filter === 'sent' ? '从卡片下方的「保存 / 分享」创建分享链接，记录会留在这里。' : filter === 'received' ? '打开收到的明信片，点「收进我的展览馆」，便能在这里珍藏。' : '完成卡片后，点上方「存为作品」，就能在这里继续编辑。');
       }
     } catch (error) { if (version === listVersion) empty('这次没能打开', error.message, '重新加载', () => loadGallery()); }
   }
@@ -148,7 +148,6 @@ export function setupLibrary({ getDraft, loadDraft, markStored, applyPreferences
     $('detailHeading').textContent = kind === 'public' ? '明信片 · 公开' : kind === 'work' ? '我的明信片' : kind === 'sent' ? '寄件记录' : '收件记录';
     $('detailVisibility').textContent = kind === 'public' || item.visibility === 'public' ? '公开作品' : '仅自己可见';
     $('detailDate').textContent = date(item.createdAt);
-    $('deliveryRecordActions').hidden = kind !== 'sent' || item.channel !== 'email' || !['unknown', 'failed', 'pending'].includes(item.deliveryStatus);
     if (kind === 'sent' || kind === 'received') $('detailVisibility').textContent = deliveryLabel(item) + (kind === 'sent' && item.recipientEmail ? ' · ' + item.recipientEmail : '');
     $('publishWork').hidden = item.visibility === 'public'; $('unpublishWork').hidden = item.visibility !== 'public';
     $('editWork').textContent = item.visibility === 'public' ? '复制后编辑' : '继续编辑';
@@ -206,9 +205,9 @@ export function setupLibrary({ getDraft, loadDraft, markStored, applyPreferences
   function openSettings(mode) {
     requireUser(() => {
       settingsMode = mode;
-      $('settingsTitle').textContent = { profile: '个人资料', mail: '邮件设置', preferences: '偏好设置' }[mode];
-      for (const [id, key] of [['profileFields', 'profile'], ['mailFields', 'mail'], ['preferenceFields', 'preferences']]) $(id).hidden = mode !== key;
-      $('nicknameField').value = user.nickname; $('bioField').value = user.bio; $('emailField').value = user.email; $('signatureField').value = user.signature;
+      $('settingsTitle').textContent = { profile: '个人资料', preferences: '偏好设置' }[mode];
+      for (const [id, key] of [['profileFields', 'profile'], ['preferenceFields', 'preferences']]) $(id).hidden = mode !== key;
+      $('nicknameField').value = user.nickname; $('bioField').value = user.bio;
       $('defaultFont').value = user.preferences.font; $('defaultTone').value = user.preferences.tone; $('defaultBilingual').checked = user.preferences.bilingual;
       $('settingsError').textContent = ''; $('settingsDialog').showModal();
     });
@@ -231,7 +230,7 @@ export function setupLibrary({ getDraft, loadDraft, markStored, applyPreferences
   $('applyPreferences').onclick = () => { applyPreferences(preferences()); notice('已应用到当前卡片，保存设置后也会用于下一张。'); };
   $('settingsForm').onsubmit = async event => {
     event.preventDefault(); $('settingsSubmit').disabled = true;
-    const body = settingsMode === 'profile' ? { nickname: $('nicknameField').value, bio: $('bioField').value } : settingsMode === 'mail' ? { email: $('emailField').value, signature: $('signatureField').value } : { preferences: preferences() };
+    const body = settingsMode === 'profile' ? { nickname: $('nicknameField').value, bio: $('bioField').value } : { preferences: preferences() };
     try { const result = await request('/api/auth/profile', body); user = result.profile; renderProfile(); $('settingsDialog').close(); notice('设置已保存。'); }
     catch (error) { $('settingsError').textContent = error.message; }
     finally { $('settingsSubmit').disabled = false; }

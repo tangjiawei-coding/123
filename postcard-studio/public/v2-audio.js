@@ -4,7 +4,7 @@ export function setupAudio({ getDraft, commit, setBusy, notice }) {
   const $ = id => document.getElementById(id);
   const voice = new Audio(), music = new Audio();
   let recorder, stream, timer, chunks = [], started = 0, recordingError = false, busy = false;
-  let permissionRequest = 0, waitingForPermission = false;
+  let permissionRequest = 0, waitingForPermission = false, permissionTimer;
   const duration = seconds => `${Math.floor(Math.round(seconds) / 60)}:${String(Math.round(seconds) % 60).padStart(2, '0')}`;
   function stopPlayback() {
     voice.pause(); music.pause(); voice.currentTime = music.currentTime = 0;
@@ -44,19 +44,34 @@ export function setupAudio({ getDraft, commit, setBusy, notice }) {
   $('recordVoice').onclick = async () => {
     if (recorder?.state === 'recording') { recorder.stop(); return; }
     if (waitingForPermission) {
-      permissionRequest++; waitingForPermission = false; lock(false);
+      clearTimeout(permissionTimer); permissionRequest++; waitingForPermission = false; lock(false);
       $('recordVoice').textContent = '录一段话'; render(); return;
     }
     if (busy) return;
-    if (!navigator.mediaDevices?.getUserMedia || !window.MediaRecorder) { notice('当前浏览器无法录音，请上传音频或使用 HTTPS / 本机地址。'); return; }
+    if (!window.isSecureContext) {
+      const message = '此网页地址不支持麦克风，请使用 HTTPS 或本机地址，也可以上传音频。';
+      $('recordStatus').textContent = message; notice(message); return;
+    }
+    if (!navigator.mediaDevices?.getUserMedia || !window.MediaRecorder) {
+      const message = '当前浏览器不支持录音，请在 Chrome / Edge 中打开，或上传音频。';
+      $('recordStatus').textContent = message; notice(message); return;
+    }
     stopPlayback(); lock(true); waitingForPermission = true;
     const request = ++permissionRequest;
     $('recordVoice').textContent = '取消录音请求';
-    $('recordStatus').textContent = '等待麦克风权限…';
+    $('recordStatus').textContent = '请在浏览器提示中允许使用麦克风；没有出现提示时，可取消请求。';
+    permissionTimer = setTimeout(() => {
+      if (request !== permissionRequest || !waitingForPermission) return;
+      permissionRequest++; waitingForPermission = false; lock(false);
+      $('recordVoice').textContent = '录一段话'; render();
+      const message = '麦克风授权未完成。请检查权限；内置浏览器没有弹出提示时，用 Chrome / Edge 打开此地址，或上传音频。';
+      $('recordStatus').textContent = message; notice(message);
+    }, 20000);
     try {
       const requestedStream = await navigator.mediaDevices.getUserMedia({ audio: true });
       // 用户可在系统权限对话框未回应时取消；迟到的授权也要立即关闭麦克风。
       if (request !== permissionRequest) { requestedStream.getTracks().forEach(track => track.stop()); return; }
+      clearTimeout(permissionTimer);
       waitingForPermission = false; stream = requestedStream;
       recorder = new MediaRecorder(stream); chunks = []; recordingError = false;
       let bytes = 0;
@@ -85,11 +100,18 @@ export function setupAudio({ getDraft, commit, setBusy, notice }) {
         $('recordStatus').textContent = '录音中 ' + duration(seconds) + ' / 3:00';
         if (seconds >= 180 && recorder.state === 'recording') recorder.stop();
       }, 250);
-    } catch {
+    } catch (error) {
       if (request !== permissionRequest) return;
+      clearTimeout(permissionTimer);
       waitingForPermission = false;
       stream?.getTracks().forEach(track => track.stop());
-      lock(false); $('recordVoice').disabled = false; $('recordVoice').textContent = '录一段话'; render(); notice('无法使用麦克风。请允许录音权限，或上传音频。');
+      lock(false); $('recordVoice').disabled = false; $('recordVoice').textContent = '录一段话'; render();
+      const message = {
+        NotAllowedError: '麦克风权限被拒绝，请在浏览器的网站权限中允许麦克风后重试。',
+        NotFoundError: '没有找到麦克风，请连接麦克风，或上传音频。',
+        NotReadableError: '无法读取麦克风，请检查系统权限及其他正在使用麦克风的程序。',
+      }[error.name] || '无法使用麦克风，请用 Chrome / Edge 重试，或上传音频。';
+      $('recordStatus').textContent = message; notice(message);
     }
   };
   async function importAudio(file, kind) {
@@ -116,6 +138,6 @@ export function setupAudio({ getDraft, commit, setBusy, notice }) {
     $(input).onchange = event => { const file = event.target.files[0]; event.target.value = ''; importAudio(file, kind); };
     $(kind === 'voice' ? 'deleteVoice' : 'deleteMusic').onclick = () => { stopPlayback(); commit(kind, null); render(); };
   }
-  window.addEventListener('pagehide', () => { clearInterval(timer); if (recorder?.state === 'recording') recorder.stop(); stream?.getTracks().forEach(track => track.stop()); stopPlayback(); });
+  window.addEventListener('pagehide', () => { clearTimeout(permissionTimer); permissionRequest++; clearInterval(timer); if (recorder?.state === 'recording') recorder.stop(); stream?.getTracks().forEach(track => track.stop()); stopPlayback(); });
   return { render, stopPlayback };
 }
