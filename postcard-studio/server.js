@@ -215,6 +215,8 @@ const SKILLS = [
     desc: '保留原图为视觉锚点 + 撕纸边抽象延伸',
     dir: path.join(SKILLS_ROOT, 'scenes-gathered-zine-v1-3'),
     promptFile: 'SKILL.md',
+    // 完整 skill 随项目保留；API 仅需画面规则，排除代理操作章节以满足提示词上限。
+    omitPromptSections: ['Standing Consent and Privacy', 'Generation Workflow', 'Output Format', 'Quality Gate'],
     directive: 'Treat the attached image as the source photograph to PRESERVE as a truthful visual anchor. Generate a vertical 3:5 Gathered Scenes Zine poster that keeps the original photographed scene inside a spacious source-derived abstract illustration field with one added high-chroma hue and a visible hand-torn fibrous paper edge, following the skill spec below.',
     headerLabel: 'SKILL PROMPT: scenes-gathered-zine-v1-3',
   },
@@ -366,7 +368,9 @@ async function generateEditorialImage(imageBuffer, mime, ext, userText, size, sk
     throw new Error('skill "' + skill.id + '" 提示词未加载，无法生成');
   }
   const directive = skill.directive;
-  const skillCore = entry.content;
+  const skillCore = entry.content.split(/(?=^## )/m).filter(section =>
+    !skill.omitPromptSections?.includes(section.split('\n', 1)[0].replace(/^## /, '').trim())
+  ).join('');
   const mood = userText && userText.trim()
     ? '\n\nReflect this user mood/context in the composition and title: ' + userText.trim()
     : '';
@@ -479,7 +483,9 @@ async function generateSentence(imageDataUrl, userText, tone, bilingual = true) 
   const systemMsg = bilingual ? toneDef.system
     + ' Output format: <Chinese sentence> then a single newline then <English sentence>. '
     + 'Do not add quotation marks, labels, "中文:"/"English:" prefixes, explanations, or any other text. '
-    + 'Only the two sentences separated by one newline.'
+    + 'Only the two sentences separated by one newline. '
+    + 'Keep the entire output within 100 characters, counting both languages, spaces and punctuation: '
+    + 'at most 20 Chinese characters and 60 English characters.'
     : '你是一位明信片文案作者。根据照片与用户的话，写一句简短自然的中文留言，语气为「'
       + toneDef.label + '」。只返回中文留言，不要英文、标题、引号或解释，最多 35 个字。';
 

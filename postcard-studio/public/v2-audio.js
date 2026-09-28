@@ -4,6 +4,7 @@ export function setupAudio({ getDraft, commit, setBusy, notice }) {
   const $ = id => document.getElementById(id);
   const voice = new Audio(), music = new Audio();
   let recorder, stream, timer, chunks = [], started = 0, recordingError = false, busy = false;
+  let permissionRequest = 0, waitingForPermission = false;
   const duration = seconds => `${Math.floor(Math.round(seconds) / 60)}:${String(Math.round(seconds) % 60).padStart(2, '0')}`;
   function stopPlayback() {
     voice.pause(); music.pause(); voice.currentTime = music.currentTime = 0;
@@ -42,12 +43,21 @@ export function setupAudio({ getDraft, commit, setBusy, notice }) {
   $('playMusic').onclick = () => play(true);
   $('recordVoice').onclick = async () => {
     if (recorder?.state === 'recording') { recorder.stop(); return; }
+    if (waitingForPermission) {
+      permissionRequest++; waitingForPermission = false; lock(false);
+      $('recordVoice').textContent = '录一段话'; render(); return;
+    }
     if (busy) return;
     if (!navigator.mediaDevices?.getUserMedia || !window.MediaRecorder) { notice('当前浏览器无法录音，请上传音频或使用 HTTPS / 本机地址。'); return; }
-    stopPlayback(); lock(true); $('recordVoice').disabled = true;
+    stopPlayback(); lock(true); waitingForPermission = true;
+    const request = ++permissionRequest;
+    $('recordVoice').textContent = '取消录音请求';
     $('recordStatus').textContent = '等待麦克风权限…';
     try {
-      stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const requestedStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      // 用户可在系统权限对话框未回应时取消；迟到的授权也要立即关闭麦克风。
+      if (request !== permissionRequest) { requestedStream.getTracks().forEach(track => track.stop()); return; }
+      waitingForPermission = false; stream = requestedStream;
       recorder = new MediaRecorder(stream); chunks = []; recordingError = false;
       let bytes = 0;
       recorder.ondataavailable = event => {
@@ -76,8 +86,10 @@ export function setupAudio({ getDraft, commit, setBusy, notice }) {
         if (seconds >= 180 && recorder.state === 'recording') recorder.stop();
       }, 250);
     } catch {
+      if (request !== permissionRequest) return;
+      waitingForPermission = false;
       stream?.getTracks().forEach(track => track.stop());
-      lock(false); $('recordVoice').disabled = false; render(); notice('无法使用麦克风。请允许录音权限，或上传音频。');
+      lock(false); $('recordVoice').disabled = false; $('recordVoice').textContent = '录一段话'; render(); notice('无法使用麦克风。请允许录音权限，或上传音频。');
     }
   };
   async function importAudio(file, kind) {

@@ -2,7 +2,7 @@
   "apiKey": "",
   "baseUrl": "https://ai.novacode.top/v1",
   "imageModel": "gpt-image-2",
-  "textModel": "gpt-5.4",
+  "textModel": "gpt-5.5",
   "imageSize": "1024x1024",
   "imageSizeFast": "768x768",
   "port": 5123,

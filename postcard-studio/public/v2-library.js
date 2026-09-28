@@ -128,8 +128,10 @@ export function setupLibrary({ getDraft, loadDraft, markStored, applyPreferences
   function socialState() {
     if (!detail) return;
     $('likePost').setAttribute('aria-pressed', String(!!detail.liked)); $('likePost').querySelector('span').textContent = String(detail.likes || 0);
+    $('likePost').setAttribute('aria-label', (detail.liked ? '取消点赞' : '点赞') + '，' + (detail.likes || 0) + ' 人');
     $('favoritePost').setAttribute('aria-pressed', String(!!detail.collected)); $('favoritePost').querySelector('span').textContent = detail.collected ? '已收藏' : '收藏';
     $('commentCount').textContent = String(detail.commentCount || 0);
+    $('focusComment').setAttribute('aria-label', '评论，' + (detail.commentCount || 0) + ' 条');
   }
   function deliveryLabel(item) {
     if (item.opened) return '已打开';
