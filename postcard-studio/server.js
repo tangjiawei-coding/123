@@ -170,7 +170,7 @@ function cardContent(payload, previous = {}) {
     editor: {
       version: 1, font: ['hand', 'serif', 'script'].includes(editor.font) ? editor.font : 'hand',
       bilingual: !!editor.bilingual, stylized: editor.stylized !== false,
-      stampColor: ['brown', 'red', 'blue'].includes(editor.stampColor) ? editor.stampColor : 'brown',
+      stampColor: ['brown', 'red', 'blue', 'green', 'violet'].includes(editor.stampColor) ? editor.stampColor : 'brown',
       createdAt: Number.isFinite(Date.parse(editor.createdAt)) ? editor.createdAt : new Date().toISOString(),
       ink: ink ? { x: bounded(ink.x, .57), y: bounded(ink.y, .69), w: bounded(ink.w, .28), h: bounded(ink.h, .22),
         strokes: Array.isArray(ink.strokes) ? ink.strokes.slice(0, 1000).filter(Array.isArray).map(stroke => stroke.slice(0, 10000).filter(point => Array.isArray(point) && point.length === 2 && point.every(Number.isFinite))) : [] } : null,

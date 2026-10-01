@@ -5,7 +5,7 @@ export function setupLibrary({ getDraft, loadDraft, markStored, applyPreferences
   const icon = name => `<svg aria-hidden="true"><use href="#i-${name}"/></svg>`;
   const make = (tag, className, text) => { const node = document.createElement(tag); if (className) node.className = className; if (text !== undefined) node.textContent = text; return node; };
   const renderCard = createCardRenderer($('postcard').cloneNode(true), notice);
-  let token = '', user = null, screen = 'create', scope = 'public', filter = 'hot', page = 1;
+  let token = '', user = null, screen = 'cover', scope = 'public', filter = 'hot', page = 1;
   let listVersion = 0, detailVersion = 0, detail = null, detailKind = '', cardView, storeView, storeSnapshot;
   let authMode = 'login', afterLogin, settingsMode = 'profile';
   try { token = localStorage.getItem('postcard_token') || ''; } catch {}
@@ -34,12 +34,12 @@ export function setupLibrary({ getDraft, loadDraft, markStored, applyPreferences
   function navigate(next) {
     if (screen === 'detail' && next !== 'detail') { cardView?.dispose(); cardView = null; detailVersion++; }
     stopAudio(); screen = next;
-    for (const name of ['create', 'gallery', 'profile', 'detail', 'receipt']) $(name + 'Screen').hidden = name !== next;
+    for (const name of ['cover', 'create', 'gallery', 'profile', 'detail', 'receipt']) $(name + 'Screen').hidden = name !== next;
     document.querySelectorAll('[data-screen]').forEach(button => {
-      const selected = button.dataset.screen === (next === 'detail' ? 'gallery' : next);
+      const selected = button.dataset.screen === (next === 'detail' ? 'gallery' : next === 'cover' ? 'create' : next);
       button.classList.toggle('current', selected); selected ? button.setAttribute('aria-current', 'page') : button.removeAttribute('aria-current');
     });
-    document.title = '一张 · ' + { create: '编辑明信片', gallery: '展览馆', profile: '我的', detail: '明信片详情', receipt: '给你的一份心意' }[next];
+    document.title = '一张 · ' + { cover: '创作', create: '编辑明信片', gallery: '展览馆', profile: '我的', detail: '明信片详情', receipt: '给你的一份心意' }[next];
     window.dispatchEvent(new CustomEvent('postcard:navigate', { detail: next }));
     if (next === 'gallery') loadGallery();
     if (next === 'profile') renderProfile();
@@ -213,7 +213,7 @@ export function setupLibrary({ getDraft, loadDraft, markStored, applyPreferences
     });
   }
   const preferences = () => ({ font: $('defaultFont').value, tone: $('defaultTone').value, bilingual: $('defaultBilingual').checked });
-  document.querySelectorAll('[data-screen]').forEach(button => { button.onclick = () => navigate(button.dataset.screen); });
+  document.querySelectorAll('[data-screen]').forEach(button => { button.onclick = () => navigate(button.dataset.screen === 'create' ? 'cover' : button.dataset.screen); });
   document.querySelectorAll('[data-gallery]').forEach(button => { button.onclick = () => { scope = button.dataset.gallery; filter = scope === 'public' ? 'hot' : 'all'; loadGallery(); }; });
   document.querySelectorAll('[data-close]').forEach(button => { button.onclick = () => $(button.dataset.close).close(); });
   document.querySelectorAll('[data-settings]').forEach(button => { button.onclick = () => openSettings(button.dataset.settings); });

@@ -31,6 +31,7 @@ export function createCardRenderer(template, notice) {
     card.querySelectorAll('button').forEach(button => { button.disabled = !interactive; button.removeAttribute('aria-busy'); });
     const editor = work.editor || {};
     card.dataset.stamp = editor.stampColor || 'brown';
+    card.querySelector('.postage-mark img').src = 'v2-assets/stamps/' + card.dataset.stamp + '.svg';
     const photo = card.querySelector('.card-photo'), image = photo.querySelector('img'), badge = photo.querySelector('.photo-edition');
     photo.querySelector('.photo-placeholder').hidden = true;
     image.src = mediaSource(work.image); image.hidden = false; image.alt = work.title || '明信片画面';

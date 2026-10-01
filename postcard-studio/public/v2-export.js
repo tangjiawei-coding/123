@@ -68,21 +68,17 @@ export async function exportPostcard(payload, template) {
       ctx.restore();
     };
     drawText(copy); drawText(card.querySelector('.card-date'));
-    const mark = card.querySelector('.postage-mark'), color = getComputedStyle(mark).color;
+    const mark = card.querySelector('.postage-mark');
     const mw = mark.clientWidth, mh = mark.clientHeight, s = Math.min(mw / 94, mh / 76);
     ctx.save(); ctx.translate(message.x + mark.offsetLeft + mw / 2, message.y + mark.offsetTop + mh / 2); ctx.rotate(9 * Math.PI / 180);
-    ctx.translate(-94 * s / 2, -76 * s / 2); ctx.scale(s, s); ctx.strokeStyle = color; ctx.fillStyle = color; ctx.lineWidth = .9;
-    for (const radius of [26, 21]) { ctx.beginPath(); ctx.arc(36, 35, radius, 0, Math.PI * 2); ctx.stroke(); }
-    for (const y of [26, 35, 44]) { ctx.beginPath(); ctx.moveTo(57, y); ctx.bezierCurveTo(69, y - 12, 80, y + 10, 93, y - 2); ctx.stroke(); }
-    ctx.textAlign = 'center'; ctx.font = '5px Georgia'; ctx.fillText('POSTCARD', 36, 24); ctx.fillText('WITH LOVE', 36, 49);
+    ctx.translate(-94 * s / 2, -76 * s / 2); ctx.scale(s, s);
+    ctx.drawImage(await loadImage(mark.querySelector('img').src), 0, 0, 94, 76);
+    ctx.fillStyle = getComputedStyle(mark).color; ctx.textAlign = 'center';
     ctx.font = `${(payload.stamp || '').length > 4 ? 6 : 9}px 'LXGW WenKai GB Screen R', KaiTi, serif`; ctx.fillText(payload.stamp || '一张', 36, 38); ctx.restore();
     if (payload.handwriting) {
       const ink = rect('.handwriting-note'), inkImage = await loadImage(payload.handwriting);
-      ctx.save(); ctx.shadowColor = '#69542d33'; ctx.shadowBlur = 4; ctx.shadowOffsetY = 2; ctx.fillStyle = '#f1e9d7'; ctx.fillRect(ink.x, ink.y, ink.w, ink.h); ctx.restore();
-      ctx.drawImage(paper, ink.x, ink.y, ink.w, ink.h);
-      const padding = ink.w * .05, factor = Math.min((ink.w - padding * 2) / inkImage.width, (ink.h - padding * 2) / inkImage.height);
+      const factor = Math.min(ink.w / inkImage.width, ink.h / inkImage.height);
       ctx.drawImage(inkImage, ink.x + (ink.w - inkImage.width * factor) / 2, ink.y + (ink.h - inkImage.height * factor) / 2, inkImage.width * factor, inkImage.height * factor);
-      ctx.fillStyle = '#e8dbb989'; ctx.fillRect(ink.x + ink.w * .31, ink.y, ink.w * .35, ink.h * .14);
     }
     if (payload.audio || payload.backgroundAudio) {
       const record = rect('.sound-sticker .record'), x = record.x + record.w / 2, y = record.y + record.h / 2, radius = record.w / 2;

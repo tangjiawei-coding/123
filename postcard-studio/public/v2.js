@@ -5,6 +5,9 @@ import { setupLibrary } from './v2-library.js';
 import { setupDelivery } from './v2-delivery.js';
 
 const $ = id => document.getElementById(id);
+// 样张使用 Pexels 免费照片经本项目六套画风生成；照片页对应 id 顺序：
+// 37186482、2808320、30315828、26968200、18011893、33117562。
+// 来源：https://www.pexels.com/photo/<id>/；打包的是生成后的缩略图。
 const styles = [
   ['photo-abstract-editorial', '象牙抽象编辑'],
   ['scenes-gathered-zine-v1-3', '实景拼贴 Zine'],
@@ -35,7 +38,7 @@ function notice(message) {
   clearTimeout(noticeTimer); $('notice').textContent = message; $('notice').hidden = false;
   noticeTimer = setTimeout(() => { $('notice').hidden = true; }, 5000);
 }
-function updateBusy() { $('saveDraft').disabled = audioBusy || photoBusy; }
+function updateBusy() { $('saveDraft').disabled = $('clearDraft').disabled = audioBusy || photoBusy; }
 function changed() {
   revision++; $('draftLabel').textContent = '正在保存到本机…';
   clearTimeout(saveTimer); saveTimer = setTimeout(() => save(false), 700);
@@ -79,6 +82,7 @@ function render() {
   document.querySelector('.font-label').textContent = (fonts[draft.font] || fonts.hand)[0];
   document.querySelectorAll('[data-skill]').forEach(button => button.setAttribute('aria-pressed', String(button.dataset.skill === draft.skill)));
   $('postcard').dataset.stamp = draft.stamp.color;
+  $('postageImage').src = 'v2-assets/stamps/' + draft.stamp.color + '.svg';
   document.querySelector('#postcard .postage-large').textContent = draft.stamp.text;
   document.querySelector('#postcard .postage-large').style.fontSize = draft.stamp.text.length > 4 ? '6px' : '9px';
   $('stampText').value = draft.stamp.text;
@@ -195,7 +199,7 @@ audio = setupAudio({ getDraft: () => draft, commit: (kind, value) => { draft[kin
 setupInk({ getInk: () => draft.ink, commit: ink => { draft.ink = ink; render(); changed(); }, notice });
 styles.forEach(([id, name]) => {
   const button = document.createElement('button'); button.className = 'style-choice'; button.dataset.skill = id;
-  button.innerHTML = '<span class="style-thumb"><svg><use href="#i-image"/></svg><small>样张待补</small></span><span class="style-title"></span>';
+  button.innerHTML = '<span class="style-thumb"><img src="v2-assets/style-' + id + '.jpg" alt=""></span><span class="style-title"></span>';
   button.querySelector('.style-title').textContent = name; button.setAttribute('aria-label', name);
   button.onclick = () => { if (draft.skill !== id) { draft.skill = id; draft.image = ''; showingOriginal = false; render(); changed(); } generateImage(); };
   $('styleStrip').appendChild(button);
@@ -203,7 +207,7 @@ styles.forEach(([id, name]) => {
 fetch('/api/skills').then(response => response.json()).then(available => {
   if (!Array.isArray(available)) return;
   document.querySelectorAll('[data-skill]').forEach(button => {
-    if (!available.some(skill => skill.id === button.dataset.skill)) { button.disabled = true; button.querySelector('small').textContent = '暂未配置'; }
+    if (!available.some(skill => skill.id === button.dataset.skill)) { button.disabled = true; button.title = '暂未配置'; }
   });
 }).catch(() => {});
 document.querySelectorAll('[data-tool]').forEach((button, index, all) => {
@@ -265,6 +269,58 @@ const library = setupLibrary({
   setStamp: color => { draft.stamp.color = color; render(); changed(); selectTool('stamp'); },
   isBusy: () => audioBusy || photoBusy, stopAudio: () => audio.stopPlayback(), notice,
 });
+let coverAnimation;
+$('clearDraft').onclick = () => $('clearDraftDialog').showModal();
+$('confirmClearDraft').onclick = async () => {
+  $('confirmClearDraft').disabled = true;
+  try {
+    await replaceDraft({ ...structuredClone(blankDraft), createdAt: new Date().toISOString() });
+    selectTool('style'); $('clearDraftDialog').close(); notice('当前草稿已清空。');
+  } catch (error) { notice(error.message); }
+  finally { $('confirmClearDraft').disabled = false; }
+};
+window.addEventListener('postcard:navigate', () => {
+  coverAnimation?.cancel(); coverAnimation = undefined; $('openCreator').disabled = false;
+});
+$('openCreator').onclick = async () => {
+  if (coverAnimation) return;
+  const button = $('openCreator'); button.disabled = true;
+  const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  coverAnimation = button.animate([
+    { transform: 'perspective(900px) rotate(-5deg) rotateY(0deg)', opacity: 1 },
+    { transform: 'perspective(900px) rotate(0deg) rotateY(-72deg) scale(1.06)', opacity: 0 }
+  ], { duration: reduced ? 0 : 420, easing: 'cubic-bezier(.4,0,.2,1)', fill: 'forwards' });
+  try { await coverAnimation.finished; library.navigate('create'); } catch { /* 离开封面时取消展开。 */ }
+};
+$('backToCover').onclick = async () => {
+  if (audioBusy || photoBusy) { notice('请先结束录音或文件处理。'); return; }
+  await save(false); library.navigate('cover');
+};
+function showDraftRow(draft, imageId, summaryId) {
+  const image = $(imageId), source = draft.image || draft.original;
+  image.hidden = !source;
+  if (source) image.src = source; else image.removeAttribute('src');
+  $(summaryId).textContent = draft.text?.trim() || (source ? '已选照片，继续完善' : '还没有添加照片');
+}
+$('myDrafts').onclick = async () => {
+  await save(false);
+  showDraftRow(draft, 'currentDraftImage', 'currentDraftSummary');
+  try {
+    const previous = await readDraft('previous');
+    $('previousDraftRow').hidden = !previous;
+    if (previous) showDraftRow(previous, 'previousDraftImage', 'previousDraftSummary');
+  } catch { $('previousDraftRow').hidden = true; }
+  $('draftsDialog').showModal();
+};
+$('continueCurrentDraft').onclick = () => { $('draftsDialog').close(); library.navigate('create'); };
+$('restoreFromMy').onclick = async () => {
+  try {
+    const previous = await readDraft('previous');
+    if (!previous) return;
+    await replaceDraft(previous); $('draftsDialog').close(); library.navigate('create');
+    notice('已恢复上一份草稿。');
+  } catch (error) { notice(error.message); }
+};
 $('newPostcard').onclick = async () => {
   try { await replaceDraft({ ...structuredClone(blankDraft), ...library.getPreferences(), createdAt: new Date().toISOString() }); library.navigate('create'); notice('新卡片已准备好，上一份草稿可在私有展览馆恢复。'); }
   catch (error) { notice(error.message); }

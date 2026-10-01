@@ -18,7 +18,7 @@ export function setupInk({ getInk, commit, notice }) {
     strokes = structuredClone(getInk()?.strokes || []);
     current = null; draw(); $('inkDialog').showModal();
   }
-  for (const id of ['openInk', 'editInk', 'inkPreview']) $(id).onclick = open;
+  for (const id of ['editInk', 'inkPreview']) $(id).onclick = open;
   const point = event => {
     const rect = canvas.getBoundingClientRect();
     return [(event.clientX - rect.left) * canvas.width / rect.width, (event.clientY - rect.top) * canvas.height / rect.height];

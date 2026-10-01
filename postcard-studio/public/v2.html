@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="theme-color" content="#f6f3ec">
-  <title>一张 · 编辑明信片</title>
+  <title>一张 · 创作</title>
   <link rel="stylesheet" href="fonts/lxgw-wenkai-gb.css">
   <link rel="stylesheet" href="v2.css">
   <link rel="stylesheet" href="v2-library.css">
@@ -48,18 +48,27 @@
     <p class="review-caption">同一张明信片，<br>慢慢写成你的样子。</p>
     <details class="review-notes"><summary>创作说明</summary>
       <p>手机基准 390 × 844。卡片暂用 14:9，左图 52%、右留言 48%。</p>
-      <p>纸张、邮戳为独立 SVG；CD 为独立样式组件。海岸插画为构图示意，六种真实风格样张尚待补充。</p>
+      <p>纸张、邮戳为独立 SVG；CD 为独立样式组件。六种风格样张已配齐。</p>
       <p>草稿保存在当前浏览器。AI 生成需要服务配置；作品可存入私有展览馆；支持导出图片、海报和分享链接。</p>
     </details>
     <a class="legacy-link" href="/">返回现有网站 <span>↗</span></a>
   </aside>
 
   <main class="app-shell" aria-label="一张明信片">
-    <div id="createScreen" class="app-screen">
+    <section id="coverScreen" class="app-screen creation-cover" aria-label="创作封面">
+      <header class="cover-header"><span>一张</span><small>POSTCARDS</small></header>
+      <div class="cover-intro"><p>把生活，做成明信片。</p><h1>有些瞬间，<br>值得寄给一个人。</h1></div>
+      <button id="openCreator" class="cover-postcard" aria-label="打开明信片，开始创作">
+        <span class="cover-card-face"><img class="cover-landscape" src="v2-assets/coast-study.svg" alt="海边风景插画"><span class="cover-letter"><img src="v2-assets/stamps/brown.svg" alt=""><span>给生活，<br>留一张纪念。</span><small>WITH LOVE</small></span></span>
+      </button>
+      <p class="cover-invitation">轻触明信片，开始写下这一刻 <span aria-hidden="true">↗</span></p>
+      <p class="cover-signoff">Postcards for a Gentler World.</p>
+    </section>
+    <div id="createScreen" class="app-screen" hidden>
     <header class="app-header">
-      <a class="icon-button" href="/" aria-label="返回现有网站"><svg><use href="#i-back"/></svg></a>
+      <button class="icon-button" id="backToCover" aria-label="返回创作封面"><svg><use href="#i-back"/></svg></button>
       <h2>编辑明信片</h2>
-      <button class="save-button" id="saveDraft">保存草稿</button>
+      <div class="draft-header-actions"><button class="clear-draft-button" id="clearDraft">清空草稿</button><button class="save-button" id="saveDraft">保存草稿</button></div>
     </header>
 
     <section class="workspace" aria-label="明信片画布">
@@ -72,7 +81,7 @@
             <span class="photo-edition" id="photoBadge" hidden></span>
           </button>
           <section class="card-message" aria-label="留言区">
-            <div class="postage-mark"><svg viewBox="0 0 94 76" aria-hidden="true"><path d="M57 26c12-12 23 10 36-2m-36 9c12-12 23 10 36-2m-36 9c12-12 23 10 36-2"/><circle cx="36" cy="35" r="26"/><circle cx="36" cy="35" r="21"/><text x="36" y="24">POSTCARD</text><text x="36" y="38" class="postage-large">一 张</text><text x="36" y="49">WITH LOVE</text></svg></div>
+            <div class="postage-mark"><img id="postageImage" src="v2-assets/stamps/brown.svg" alt=""><span class="postage-large">一张</span></div>
             <button class="blank-message" id="blankMessage" aria-label="打开文字工具，写下留言"><svg><use href="#i-pen"/></svg><span>这一面，留给你的话。</span><small>也可以什么都不写</small></button>
             <p class="card-copy" id="cardCopy" hidden>愿我们在不同的日子里，<br>都能看到同一片海。</p>
             <button class="sound-sticker" id="soundSticker" hidden aria-label="播放原声留言"><span class="record"><span class="record-label"></span></span><span class="sound-duration"><svg><use href="#i-play"/></svg>0:28</span></button>
@@ -93,12 +102,12 @@
         <button role="tab" id="tab-stamp" data-tool="stamp" aria-selected="false" aria-controls="panel-stamp"><svg><use href="#i-stamp"/></svg><span>邮戳</span></button>
       </nav>
       <div class="tool-panel" role="tabpanel" id="panel-style" aria-labelledby="tab-style">
-        <div class="panel-heading"><h3>给风景，另一种表达</h3><span>6 种风格</span></div>
-        <div class="style-strip" id="styleStrip" aria-label="六种真实风格名称，样张待补"></div>
-        <div class="panel-footnote"><span class="mini-dot"></span><span id="generationStatus" role="status">导入照片后，选择一种画风。真实样张待补。</span><button id="regenerate" class="panel-link" hidden>重新生成</button></div>
+        <div class="panel-heading"><h3>给风景，另一种表达</h3></div>
+        <div class="style-strip" id="styleStrip" aria-label="六种画风样张"></div>
+        <div class="panel-footnote"><span class="mini-dot"></span><span id="generationStatus" role="status">导入照片后，选择一种画风。</span><button id="regenerate" class="panel-link" hidden>重新生成</button></div>
       </div>
       <div class="tool-panel" role="tabpanel" id="panel-text" aria-labelledby="tab-text" hidden>
-        <div class="panel-heading"><h3>想对 Ta 说些什么？</h3><span>可以留白</span></div>
+        <div class="panel-heading"><h3>想对 Ta 说些什么？</h3></div>
         <label class="sr-only" for="messagePreview">明信片留言</label><textarea id="messagePreview" maxlength="100" placeholder="写一句今天想说的话……"></textarea>
         <p id="copyOverflow" class="panel-footnote" role="status" hidden>留言超出卡面，请减少字数或换行。</p>
         <div class="text-options"><button class="ai-button" id="suggestText"><svg><use href="#i-spark"/></svg>AI 帮我写</button><button class="bilingual" id="bilingual" aria-pressed="false">双语<span class="toggle" aria-hidden="true"></span></button></div>
@@ -107,12 +116,12 @@
         <div class="font-options" aria-label="字体样式示意"><span>字体</span><button class="font-sample selected" data-font="hand" aria-label="文楷">Aa</button><button class="font-sample serif" data-font="serif" aria-label="宋体">Aa</button><button class="font-sample script" data-font="script" aria-label="手写体">Aa</button><span class="font-label">霞鹜文楷</span></div>
       </div>
       <div class="tool-panel" role="tabpanel" id="panel-ink" aria-labelledby="tab-ink" hidden>
-        <div class="panel-heading"><h3>留下你的笔迹</h3><button class="panel-link" id="openInk"><svg><use href="#i-expand"/></svg>放大书写</button></div>
+        <div class="panel-heading"><h3>留下你的笔迹</h3></div>
         <div class="ink-demo"><button id="inkPreview" class="ink-preview" aria-label="打开手写画板">点击写下你的话</button><div class="ink-actions"><button id="removeInk"><svg><use href="#i-trash"/></svg>移除</button><button id="editInk"><svg><use href="#i-pen"/></svg>书写</button></div></div>
         <p class="panel-footnote">独立的手写图层，可以放在风景或留言一侧。</p>
       </div>
       <div class="tool-panel" role="tabpanel" id="panel-sound" aria-labelledby="tab-sound" hidden>
-        <div class="panel-heading"><h3>让 Ta 听见你的声音</h3><span>原声留言</span></div>
+        <div class="panel-heading"><h3>让 Ta 听见你的声音</h3></div>
         <div class="record-demo"><span class="record large"><span class="record-label"></span></span><div><strong>有些话，想亲口说</strong><p>声音会成为卡片上的一枚唱片。</p></div></div>
         <div class="sound-actions"><button class="ai-button" id="recordVoice"><svg><use href="#i-mic"/></svg>录一段话</button><button class="soft-button" id="chooseMusic"><svg><use href="#i-music"/></svg>添加背景声音</button></div>
         <p id="recordStatus" class="panel-footnote" role="status">最长 3 分钟，也可以上传音频。</p>
@@ -120,8 +129,8 @@
         <p id="musicLabel" class="panel-footnote">背景声音：关闭</p>
       </div>
       <div class="tool-panel" role="tabpanel" id="panel-stamp" aria-labelledby="tab-stamp" hidden>
-        <div class="panel-heading"><h3>给这一刻，盖个纪念</h3><span>系统模板</span></div>
-        <div class="stamp-options"><button class="selected" data-stamp="brown" aria-pressed="true"><img src="v2-assets/postmark.svg" alt="日常邮戳模板"></button><button data-stamp="red" aria-pressed="false"><img src="v2-assets/postmark.svg" alt="暖红邮戳模板"></button><button data-stamp="blue" aria-pressed="false"><img src="v2-assets/postmark.svg" alt="靛蓝邮戳模板"></button><button class="more-stamps" data-unavailable="更多模板将在这一屏确认后补充。">＋<span>更多</span></button></div>
+        <div class="panel-heading"><h3>给这一刻，盖个纪念</h3></div>
+        <div class="stamp-options"><button data-stamp="brown" aria-pressed="true" class="selected"><img src="v2-assets/stamps/brown.svg" alt="日常邮戳"></button><button data-stamp="red" aria-pressed="false"><img src="v2-assets/stamps/red.svg" alt="暖红邮戳"></button><button data-stamp="blue" aria-pressed="false"><img src="v2-assets/stamps/blue.svg" alt="靛蓝邮戳"></button><button data-stamp="green" aria-pressed="false"><img src="v2-assets/stamps/green.svg" alt="绿叶邮戳"></button><button data-stamp="violet" aria-pressed="false"><img src="v2-assets/stamps/violet.svg" alt="纪念邮戳"></button></div>
         <label class="stamp-edit field-label">邮戳文字<input id="stampText" maxlength="6" value="一张" placeholder="最多六个字"></label>
       </div>
     </section>
@@ -141,7 +150,8 @@
       <header class="screen-header"><span class="header-mark">一张</span><h2>我的</h2><span></span></header>
       <div class="profile-hero"><span id="profileAvatar" class="profile-avatar">一</span><div><h3 id="profileName">给生活，留一张纪念</h3><p id="profileBio">登录后，收藏风景，也珍藏自己的心意。</p><button id="profileLogin" class="panel-link">登录 / 注册 ↗</button></div></div>
       <div class="profile-menu">
-        <button id="myStamps"><svg><use href="#i-stamp"/></svg><span>我的邮戳</span><small>3 枚</small><svg><use href="#i-chevron"/></svg></button>
+        <button id="myDrafts"><svg><use href="#i-text"/></svg><span>我的草稿</span><small>保存在本机</small><svg><use href="#i-chevron"/></svg></button>
+        <button id="myStamps"><svg><use href="#i-stamp"/></svg><span>我的邮戳</span><small>5 枚</small><svg><use href="#i-chevron"/></svg></button>
         <button data-settings="profile"><svg><use href="#i-person"/></svg><span>个人资料</span><svg><use href="#i-chevron"/></svg></button>
         <button id="myFavorites"><svg><use href="#i-star"/></svg><span>我的收藏</span><svg><use href="#i-chevron"/></svg></button>
         <button data-settings="preferences"><svg><use href="#i-settings"/></svg><span>偏好设置</span><svg><use href="#i-chevron"/></svg></button>
@@ -174,13 +184,15 @@
   </main>
   <dialog id="zoomDialog" aria-labelledby="zoomTitle"><div class="zoom-header"><h2 id="zoomTitle">明信片 · 放大查看</h2><button class="icon-button" id="closeZoom" aria-label="关闭放大"><svg><use href="#i-close"/></svg></button></div><div id="zoomContent"></div><p><span id="zoomHint">点击图片区查看原图；拖动笔迹调整位置。</span></p></dialog>
   <dialog id="inkDialog" aria-labelledby="inkTitle"><div class="zoom-header"><h2 id="inkTitle">写下你的心意</h2><button class="icon-button" id="cancelInk" aria-label="取消手写"><svg><use href="#i-close"/></svg></button></div><canvas id="inkCanvas" width="1000" height="500" aria-label="手写画板"></canvas><p>用手指、笔或鼠标书写，完成后可在卡面上拖动。</p><div class="dialog-actions"><button id="undoInk" class="soft-button">撤销一笔</button><button id="clearInk" class="soft-button">清空</button><button id="finishInk" class="save-button">完成</button></div></dialog>
+  <dialog id="clearDraftDialog" class="compact-dialog" aria-labelledby="clearDraftTitle"><div class="zoom-header"><h2 id="clearDraftTitle">清空当前草稿？</h2></div><p class="dialog-intro">当前卡片会恢复为空白，照片、文字、手写和声音都会移除。</p><div class="dialog-actions"><button class="soft-button" data-close="clearDraftDialog">取消</button><button class="save-button" id="confirmClearDraft">清空草稿</button></div></dialog>
   <input id="photoFile" type="file" accept="image/jpeg,image/png,image/webp" hidden>
   <input id="voiceFile" type="file" accept="audio/*" hidden>
   <input id="musicFile" type="file" accept="audio/*" hidden>
   <dialog id="accountDialog" class="compact-dialog" aria-labelledby="accountTitle"><div class="zoom-header"><h2 id="accountTitle">欢迎回来</h2><button class="icon-button" data-close="accountDialog" aria-label="关闭登录"><svg><use href="#i-close"/></svg></button></div><p class="dialog-intro">收藏远方，也收好自己的明信片。</p><form id="accountForm" class="stack-form"><label>用户名<input id="accountName" autocomplete="username" maxlength="20" required></label><label>密码<input id="accountPassword" type="password" autocomplete="current-password" minlength="6" required></label><p id="accountError" class="form-error" role="alert"></p><button id="accountSubmit" class="save-button" type="submit">登录</button></form><button id="switchAccountMode" class="text-button">还没有账号？注册一个</button></dialog>
   <dialog id="storeDialog" class="compact-dialog" aria-labelledby="storeTitle"><div class="zoom-header"><h2 id="storeTitle">存入私有展览馆</h2><button class="icon-button" data-close="storeDialog" aria-label="关闭保存作品"><svg><use href="#i-close"/></svg></button></div><div id="storePreview" class="store-preview"></div><form id="storeForm" class="stack-form"><label>为这一张起个名字<input id="workTitle" maxlength="60" placeholder="例如：写给夏天的一封信" required></label><p class="dialog-intro">保存后仅自己可见。照片、文字、笔迹和声音会一同保存。</p><p id="storeError" class="form-error" role="alert"></p><button id="storeSubmit" class="save-button" type="submit">保存作品</button></form></dialog>
+  <dialog id="draftsDialog" class="compact-dialog" aria-labelledby="draftsTitle"><div class="zoom-header"><h2 id="draftsTitle">我的草稿</h2><button class="icon-button" data-close="draftsDialog" aria-label="关闭我的草稿"><svg><use href="#i-close"/></svg></button></div><p class="dialog-intro">草稿保存在当前浏览器，不会自动同步到其他设备。</p><div class="my-draft-row"><img id="currentDraftImage" alt="当前草稿照片" hidden><div><strong>正在写的这一张</strong><p id="currentDraftSummary"></p></div><button id="continueCurrentDraft" class="panel-link">继续写 ↗</button></div><div id="previousDraftRow" class="my-draft-row" hidden><img id="previousDraftImage" alt="上一份草稿照片" hidden><div><strong>上一份草稿</strong><p id="previousDraftSummary"></p></div><button id="restoreFromMy" class="panel-link">恢复 ↗</button></div></dialog>
   <dialog id="settingsDialog" class="compact-dialog" aria-labelledby="settingsTitle"><div class="zoom-header"><h2 id="settingsTitle">个人资料</h2><button class="icon-button" data-close="settingsDialog" aria-label="关闭设置"><svg><use href="#i-close"/></svg></button></div><form id="settingsForm" class="stack-form"><div id="profileFields"><label>昵称<input id="nicknameField" maxlength="20"></label><label>个人简介<textarea id="bioField" maxlength="100" placeholder="把生活，做成明信片。"></textarea></label><p class="dialog-intro">昵称与简介会在公开作品详情中显示。</p></div><div id="preferenceFields" hidden><label>默认字体<select id="defaultFont"><option value="hand">霞鹜文楷</option><option value="serif">宋体</option><option value="script">手写体</option></select></label><label>默认文案语气<select id="defaultTone"><option value="poetic">诗意</option><option value="healing">温柔</option><option value="sassy">俏皮</option><option value="love">表白</option><option value="travel">旅行</option><option value="literary">文艺</option></select></label><label class="check-field"><input id="defaultBilingual" type="checkbox">AI 建议默认使用双语</label><p class="dialog-intro">用于下一张新草稿；也可以主动应用到当前卡片。</p><button id="applyPreferences" type="button" class="soft-button">应用到当前卡片</button></div><p id="settingsError" class="form-error" role="alert"></p><button id="settingsSubmit" class="save-button" type="submit">保存设置</button></form></dialog>
-  <dialog id="stampsDialog" class="compact-dialog" aria-labelledby="stampsTitle"><div class="zoom-header"><h2 id="stampsTitle">我的邮戳</h2><button class="icon-button" data-close="stampsDialog" aria-label="关闭我的邮戳"><svg><use href="#i-close"/></svg></button></div><p class="dialog-intro">三枚常用邮戳，选一枚去写明信片。</p><div class="stamp-collection"><button data-use-stamp="brown"><img src="v2-assets/postmark.svg" alt="日常邮戳"><span>日常</span></button><button data-use-stamp="red"><img src="v2-assets/postmark.svg" alt="暖红邮戳"><span>暖红</span></button><button data-use-stamp="blue"><img src="v2-assets/postmark.svg" alt="靛蓝邮戳"><span>靛蓝</span></button></div></dialog>
+  <dialog id="stampsDialog" class="compact-dialog" aria-labelledby="stampsTitle"><div class="zoom-header"><h2 id="stampsTitle">我的邮戳</h2><button class="icon-button" data-close="stampsDialog" aria-label="关闭我的邮戳"><svg><use href="#i-close"/></svg></button></div><p class="dialog-intro">选一枚邮戳，留住这一刻。</p><div class="stamp-collection"><button data-use-stamp="brown"><img src="v2-assets/stamps/brown.svg" alt="日常邮戳"><span>日常</span></button><button data-use-stamp="red"><img src="v2-assets/stamps/red.svg" alt="暖红邮戳"><span>暖红</span></button><button data-use-stamp="blue"><img src="v2-assets/stamps/blue.svg" alt="靛蓝邮戳"><span>靛蓝</span></button><button data-use-stamp="green"><img src="v2-assets/stamps/green.svg" alt="绿叶邮戳"><span>绿叶</span></button><button data-use-stamp="violet"><img src="v2-assets/stamps/violet.svg" alt="纪念邮戳"><span>纪念</span></button></div></dialog>
   <dialog id="helpDialog" class="compact-dialog" aria-labelledby="helpTitle"><div class="zoom-header"><h2 id="helpTitle">慢慢写，慢慢寄</h2><button class="icon-button" data-close="helpDialog" aria-label="关闭使用帮助"><svg><use href="#i-close"/></svg></button></div><div class="help-copy"><h3>写一张</h3><p>导入照片，选择画风。留言可以留白，也可以加入笔迹和声音；点击图片区查看原图。</p><h3>收好它</h3><p>草稿自动保存在当前浏览器。登录后，在展览馆的「私有」中点「存为作品」，保存到自己的账号。</p><h3>分享心意</h3><p>打开自己的作品，主动选择「公开展示」才会出现在公开展览馆。寄件、收件记录都在私有筛选中。</p><h3>还在制作中</h3><p>卡片下方可保存图片、导出海报或分享链接。分享链接供他人访问需要外网地址；AI 生图与帮写需要配置服务密钥。</p></div></dialog>
   <dialog id="publishDialog" class="compact-dialog" aria-labelledby="publishTitle"><div class="zoom-header"><h2 id="publishTitle">把这张心意公开展示</h2><button class="icon-button" data-close="publishDialog" aria-label="取消公开展示"><svg><use href="#i-close"/></svg></button></div><p class="dialog-intro">公开后，其他人能看到卡片、查看原图并播放声音，也能点赞、评论和收藏。可以随时转回私有。</p><form id="publishForm" class="stack-form"><label>作品介绍<textarea id="publishDescription" maxlength="500" placeholder="说说这张明信片背后的故事……"></textarea></label><p id="publishError" class="form-error" role="alert"></p><button id="confirmPublish" class="save-button" type="submit">确认公开展示</button></form></dialog>
   <dialog id="deliveryDialog" class="compact-dialog" aria-labelledby="deliveryTitle"><div class="zoom-header"><h2 id="deliveryTitle">把这份心意，送出去</h2><button class="icon-button" data-close="deliveryDialog" aria-label="关闭分享"><svg><use href="#i-close"/></svg></button></div>

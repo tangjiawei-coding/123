@@ -20,8 +20,25 @@ svg{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:1.5;stroke
 .sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%)}
 
 .app-shell{width:var(--app-width);min-height:844px;margin:36px auto;display:flex;flex-direction:column;background:var(--paper) url('v2-assets/paper.svg');box-shadow:0 20px 70px #58452c1b;position:relative;overflow:hidden}
+.creation-cover{padding:0 27px;align-items:center;justify-content:center;min-height:650px}
+.cover-header{display:flex;align-items:baseline;gap:10px;align-self:stretch;padding:27px 0;margin-bottom:auto;color:#9d876b}
+.cover-header>span{font:25px var(--hand)}.cover-header small{font:8px Georgia,serif;letter-spacing:3px}
+.cover-intro{align-self:stretch;margin:32px 0 44px;padding-left:7px}
+.cover-intro p{font:11px var(--hand);letter-spacing:2px;color:#a18e76;margin:0 0 18px}
+.cover-intro h1{font:29px/1.7 var(--hand);letter-spacing:2px;font-weight:400;color:#65503b;margin:0}
+.cover-postcard{display:block;position:relative;width:100%;padding:0;transform:rotate(-5deg);transform-origin:10% 50%;isolation:isolate;border-radius:3px;outline-offset:10px}
+.cover-postcard:before{content:'';position:absolute;inset:4px;background:#eae0cc;border:1px solid #ded1b9;transform:rotate(8deg);z-index:-1}
+.cover-card-face{display:flex;gap:12px;aspect-ratio:14/9;padding:13px;background:#fff9ea url('v2-assets/paper.svg');border:1px solid #e4d9c9;box-shadow:0 15px 22px #69533325;border-radius:3px}
+.cover-landscape{width:48%;object-fit:cover}.cover-letter{flex:1;display:flex;flex-direction:column;align-items:flex-start;text-align:left;border-left:1px solid #ded2bd;padding-left:12px}
+.cover-letter>img{width:65px;height:48px;align-self:flex-end;opacity:.7}.cover-letter>span{font:17px/1.9 var(--hand);color:#715c43;margin:auto 0}.cover-letter>small{font:7px Georgia,serif;letter-spacing:2px;color:#aa967b}
+.cover-invitation{font:11px var(--hand);letter-spacing:1px;color:#9a856a;margin:40px 0 38px}.cover-invitation span{margin-left:8px}
+.cover-signoff{font:14px PostcardScript,serif;color:#baa58a;margin:auto 0 35px}
+@media(max-height:720px){.creation-cover{min-height:560px}.cover-intro{margin:15px 0 30px}.cover-intro h1{font-size:25px}.cover-invitation{margin:30px 0}.cover-signoff{margin-bottom:20px}}
 
-.app-header{height:74px;display:grid;grid-template-columns:60px 1fr 60px;align-items:center;padding:12px 16px;flex-shrink:0}
+.app-header{height:74px;display:grid;grid-template-columns:32px 1fr auto;gap:6px;align-items:center;padding:12px 16px;flex-shrink:0}
+.draft-header-actions{display:flex;align-items:center;gap:9px;white-space:nowrap}
+.draft-header-actions .save-button{font-size:10px;padding:6px 9px;letter-spacing:0}
+.clear-draft-button{font-size:10px;color:#9a7d65;padding:8px 0}
 .app-header h2{font-size:15px;letter-spacing:.04em;text-align:center;font-weight:500;margin:0}
 .icon-button{width:40px;height:40px;display:grid;place-items:center;border-radius:50%}
 .icon-button svg{width:20px;height:20px}
@@ -235,3 +252,18 @@ select,input{font:inherit;color:var(--ink);border:1px solid var(--line);border-r
 #notice{pointer-events:none}
 .suggestion label{font-size:10px;color:var(--muted)}
 @media(max-width:430px){#zoomContent{padding:0}dialog{padding:12px}.photo-placeholder small{font-size:2.4cqw}}
+
+/* 样张与透明笔迹共用纸色底，但不把纸色烙进图像。 */
+.style-thumb img{width:100%;height:100%;object-fit:contain}
+.postage-mark img{width:100%;height:100%;object-fit:contain}
+.postage-mark .postage-large{position:absolute;left:38.3%;top:46%;transform:translate(-50%,-50%);font:9px var(--hand);white-space:nowrap;color:inherit}
+.postcard[data-stamp=green] .postage-mark{color:#6d8068}
+.postcard[data-stamp=violet] .postage-mark{color:#847195}
+.handwriting-note{background:transparent;box-shadow:none;clip-path:none;transform:none;touch-action:none}
+.handwriting-note:before{display:none}
+.handwriting-note img{padding:0}
+.ink-demo>img,.ink-preview{background:transparent}
+.stamp-options{gap:3px;justify-content:space-between}
+.stamp-options>button{width:55px;height:55px}
+.stamp-collection{gap:4px;flex-wrap:wrap}
+.stamp-collection img{width:60px;height:60px}
