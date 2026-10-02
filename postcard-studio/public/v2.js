@@ -137,7 +137,8 @@ async function importPhoto(file) {
     if (version !== importVersion) return;
     // 原图完整保留，生成请求单独压缩，避免请求体过大。
     imageRequest?.abort(); textRequest?.abort();
-    draft.original = original; draft.image = ''; showingOriginal = false;
+    draft.original = original; draft.image = ''; draft.text = ''; showingOriginal = false;
+    suggestion = ''; previousText = null; $('suggestedCopy').value = '';
     $('textSuggestion').hidden = true; render(); changed();
     generateImage();
   } catch (error) { notice(error.message); }

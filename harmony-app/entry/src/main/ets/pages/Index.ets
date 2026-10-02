@@ -147,7 +147,7 @@ struct Index {
     await this.run('正在导入照片…', async () => {
       const data = await MediaService.choosePhoto(this.context(), camera);
       if (!data) { return; }
-      this.card.originalImage = data; this.card.image = ''; this.card.editor.stylized = false;
+      this.card.originalImage = data; this.card.image = ''; this.card.sentence = ''; this.card.editor.stylized = false;
       this.original = false; this.changed(); this.tip('照片已导入，选择画风后生成。');
     });
   }
@@ -156,7 +156,8 @@ struct Index {
     if (!this.card.originalImage) { this.tip('先导入一张照片'); return; }
     await this.run(textOnly ? '正在写一句话…' : '正在把风景画成明信片，可能需要几分钟…', async () => {
       const originalImage = await this.api.imageData(this.card.originalImage);
-      const request: GenerateRequest = { image: originalImage, text: this.card.sentence,
+      // 整张生成只参考当前照片，避免把上一轮文案画进新图片；单独写文案时才参考现有文字。
+      const request: GenerateRequest = { image: originalImage, text: textOnly ? this.card.sentence : '',
         skill: this.card.skill, tone: this.card.tone, mode: 'fast', bilingual: this.card.editor.bilingual };
       // 两个独立接口让中英双语开关生效，单项失败时也保留另一项成果。
       let result: GenerateResult;
