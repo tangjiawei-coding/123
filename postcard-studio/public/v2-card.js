@@ -4,13 +4,13 @@ export function draftPayload(draft) {
     sentence: draft.text, handwriting: draft.ink?.image || '', audio: draft.voice,
     backgroundAudio: draft.music, skill: draft.skill, tone: draft.tone, stamp: draft.stamp.text,
     editor: { version: 1, font: draft.font, bilingual: draft.bilingual, stylized: !!draft.image,
-      stampColor: draft.stamp.color, createdAt: draft.createdAt,
-      ink: draft.ink ? { x: draft.ink.x, y: draft.ink.y, w: draft.ink.w, h: draft.ink.h, strokes: draft.ink.strokes } : null } };
+      stampColor: draft.stamp.color, createdAt: draft.createdAt, layout: draft.layout || 'split',
+      ink: draft.ink ? { x: draft.ink.x, y: draft.ink.y, w: draft.ink.w, h: draft.ink.h, strokes: draft.ink.strokes, color: draft.ink.color, lineWidth: draft.ink.lineWidth, canvasWidth: draft.ink.canvasWidth } : null } };
 }
 export function workDraft(work) {
   const editor = work.editor || {};
   return { version: 1, original: work.originalImage || work.image, image: editor.stylized === false ? '' : work.image,
-    text: work.sentence || '', font: editor.font || 'hand', bilingual: !!editor.bilingual,
+    layout: editor.layout || 'split', text: work.sentence || '', font: editor.font || 'hand', bilingual: !!editor.bilingual,
     tone: work.tone || 'poetic', skill: work.skill || 'photo-abstract-editorial',
     ink: work.handwriting ? { ...editor.ink, image: work.handwriting,
       x: editor.ink?.x ?? .57, y: editor.ink?.y ?? .69, w: editor.ink?.w ?? .28, h: editor.ink?.h ?? .22, strokes: editor.ink?.strokes || [] } : null,
@@ -31,6 +31,8 @@ export function createCardRenderer(template, notice) {
     card.querySelectorAll('button').forEach(button => { button.disabled = !interactive; button.removeAttribute('aria-busy'); });
     const editor = work.editor || {};
     card.dataset.stamp = editor.stampColor || 'brown';
+    card.dataset.layout = ['split', 'stack', 'photo'].includes(editor.layout) ? editor.layout : 'split';
+    card.setAttribute('aria-label', '明信片');
     card.querySelector('.postage-mark img').src = 'v2-assets/stamps/' + card.dataset.stamp + '.svg';
     const photo = card.querySelector('.card-photo'), image = photo.querySelector('img'), badge = photo.querySelector('.photo-edition');
     photo.querySelector('.photo-placeholder').hidden = true;
@@ -40,6 +42,8 @@ export function createCardRenderer(template, notice) {
     badge.hidden = !interactive;
     const updatePhoto = () => {
       image.src = mediaSource(original ? work.originalImage : work.image);
+      image.style.objectFit = !original && editor.stylized !== false ? 'contain' : 'cover';
+      image.style.backgroundColor = '#f3f0e8';
       badge.textContent = canFlip ? original ? '原图 · 点击返回' : '点击看原图' : editor.stylized === false ? '原图' : '明信片画面';
       photo.setAttribute('aria-label', canFlip ? original ? '返回明信片画面' : '查看原图' : '明信片画面');
     };
@@ -48,7 +52,7 @@ export function createCardRenderer(template, notice) {
     const copy = card.querySelector('.card-copy');
     copy.hidden = !work.sentence; copy.textContent = work.sentence || '';
     copy.classList.toggle('long-copy', (work.sentence || '').length > 38);
-    copy.style.fontFamily = { hand: 'var(--hand)', serif: 'PostcardSerif, SimSun, serif', script: 'PostcardScript, var(--hand)' }[editor.font] || 'var(--hand)';
+    copy.style.fontFamily = { sans: 'var(--ui)', hand: 'var(--hand)', serif: 'PostcardSerif, SimSun, serif', script: 'PostcardScript, var(--hand)' }[editor.font] || 'var(--hand)';
     const stamp = card.querySelector('.postage-large'); stamp.textContent = work.stamp || '一张'; stamp.style.fontSize = (work.stamp || '').length > 4 ? '6px' : '9px';
     card.querySelector('.card-date').textContent = new Date(editor.createdAt || work.createdAt || Date.now()).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }).toUpperCase();
     const ink = card.querySelector('.handwriting-note'); ink.hidden = !work.handwriting; ink.removeAttribute('role'); ink.removeAttribute('aria-label'); ink.style.pointerEvents = 'none';

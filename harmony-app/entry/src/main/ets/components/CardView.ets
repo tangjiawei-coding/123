@@ -22,14 +22,69 @@ export struct CardView {
     return /^(https?:|data:|file:)/.test(value) ? value : this.baseUrl + value;
   }
 
+  @Builder
+  layoutPhoto() {
+    if (this.card.image || this.card.originalImage) {
+      Image(this.source(this.original ? this.card.originalImage || this.card.image : this.card.image || this.card.originalImage))
+        .width('100%').height('100%').objectFit(!this.original && this.card.editor?.stylized ? ImageFit.Contain : ImageFit.Cover).backgroundColor('#F3F0E8')
+    } else {
+      Text('导入一张照片').fontSize(this.cardWidth * 0.038).fontColor('#9E8C79')
+        .width('100%').height('100%').textAlign(TextAlign.Center).backgroundColor('#EEE8DB')
+    }
+  }
+
+  @Builder
+  layoutStamp() {
+    Stack() {
+      Image($rawfile('postage-' + (this.card.editor?.stampColor || 'brown') + '.svg'))
+        .width(this.cardWidth * 0.20).height(this.cardWidth * 0.16).opacity(0.7)
+      Text(this.card.stamp || '一张').fontSize(this.cardWidth * 0.022).fontFamily('PostcardHand').fontColor('#82654D')
+        .width(this.cardWidth * 0.09).textAlign(TextAlign.Center)
+        .position({ x: this.cardWidth * 0.03, y: this.cardWidth * 0.058 })
+    }.width(this.cardWidth * 0.20).height(this.cardWidth * 0.16)
+  }
+
+  @Builder
+  layoutCopy() {
+    Text(this.card.sentence || (this.showHints ? '这一面，留给你的话。' : ''))
+      .fontColor(this.card.sentence ? '#514335' : '#B5A795')
+      .fontFamily(this.card.editor?.font === 'serif' ? 'serif' : this.card.editor?.font === 'sans' ? 'HarmonyOS Sans' : 'PostcardHand')
+      .fontSize(this.cardWidth * 0.033).minFontSize(this.cardWidth * 0.019).maxFontSize(this.cardWidth * 0.033)
+      .maxLines(10).heightAdaptivePolicy(TextHeightAdaptivePolicy.MIN_FONT_SIZE_FIRST)
+      .layoutWeight(1).width('100%')
+  }
+
+  @Builder
+  layoutDate() {
+    Text(new Date(this.card.editor?.createdAt || this.card.createdAt || Date.now()).toLocaleDateString())
+      .fontSize(this.cardWidth * 0.018).letterSpacing(2).fontColor('#A7947D').width('100%')
+  }
+
   build() {
     Stack() {
       Image($rawfile('paper.svg')).width('100%').height('100%').objectFit(ImageFit.Fill).opacity(0.5)
+      if (this.card.editor?.layout === 'stack') {
+        Column({ space: this.cardWidth * 0.025 }) {
+          Stack() { this.layoutPhoto() }.width('100%').height('56%').onClick(() => this.onPhoto())
+          Row({ space: this.cardWidth * 0.025 }) {
+            Column({ space: 4 }) { this.layoutCopy(); this.layoutDate() }.layoutWeight(1).height('100%')
+            this.layoutStamp()
+          }.width('100%').layoutWeight(1).alignItems(VerticalAlign.Top)
+        }.padding(this.cardWidth * 0.04).width('100%').height('100%')
+      } else if (this.card.editor?.layout === 'photo') {
+        Stack({ alignContent: Alignment.TopEnd }) {
+          Stack() { this.layoutPhoto() }.width('100%').height('100%').onClick(() => this.onPhoto())
+          this.layoutStamp()
+          Column({ space: 4 }) { this.layoutCopy(); this.layoutDate() }
+            .width('58%').height('42%').padding(this.cardWidth * 0.022).backgroundColor('#EDFFF9EA')
+            .position({ x: this.cardWidth * 0.33, y: this.cardWidth * 0.32 })
+        }.padding(this.cardWidth * 0.04).width('100%').height('100%')
+      } else {
       Row({ space: this.cardWidth * 0.034 }) {
         Stack({ alignContent: Alignment.BottomStart }) {
           if (this.card.image || this.card.originalImage) {
             Image(this.source(this.original ? this.card.originalImage || this.card.image : this.card.image || this.card.originalImage))
-              .width('100%').height('100%').objectFit(ImageFit.Cover)
+              .width('100%').height('100%').objectFit(!this.original && this.card.editor?.stylized ? ImageFit.Contain : ImageFit.Cover).backgroundColor('#F3F0E8')
           } else {
             Column({ space: 12 }) {
               Image($rawfile('i-image.svg')).width(27).height(27).opacity(0.6)
@@ -56,7 +111,7 @@ export struct CardView {
             .fontSize(this.cardWidth * 0.035).minFontSize(this.cardWidth * 0.025).maxFontSize(this.cardWidth * 0.035).maxLines(10)
             .heightAdaptivePolicy(TextHeightAdaptivePolicy.MIN_FONT_SIZE_FIRST)
             .layoutWeight(1).width('100%').lineHeight(this.cardWidth * 0.065)
-          Text(new Date(this.card.createdAt || Date.now()).toLocaleDateString())
+          Text(new Date(this.card.editor?.createdAt || this.card.createdAt || Date.now()).toLocaleDateString())
             .fontSize(this.cardWidth * 0.018).letterSpacing(2).fontColor('#A7947D').width('100%')
         }.width('100%').height('100%')
         if (this.card.audio || this.card.backgroundAudio) {
@@ -64,6 +119,11 @@ export struct CardView {
         }
         }.layoutWeight(48).height('100%')
       }.padding(this.cardWidth * 0.04).width('100%').height('100%')
+      }
+      if (this.card.editor?.layout !== 'split' && this.card.editor?.layout && (this.card.audio || this.card.backgroundAudio)) {
+        Image($rawfile('record.svg')).width(this.cardWidth * 0.10).height(this.cardWidth * 0.10)
+          .position({ x: this.cardWidth * 0.055, y: this.cardWidth * 0.49 })
+      }
       if (this.card.handwriting) {
         Image(this.source(this.card.handwriting)).objectFit(ImageFit.Contain)
           .draggable(false)
@@ -94,7 +154,7 @@ export struct CardView {
           })
       }
     }.width('100%').aspectRatio(14 / 9).backgroundColor('#FFF9EA')
-      .borderRadius(3).border({ width: 1, color: '#E4D9C9' })
+      .clip(true).borderRadius(3).border({ width: 1, color: '#E4D9C9' })
       .onAreaChange((oldArea: Area, area: Area) => { this.cardWidth = Number(area.width); })
   }
 }

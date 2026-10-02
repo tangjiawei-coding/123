@@ -5,9 +5,10 @@ import { setupLibrary } from './v2-library.js';
 import { setupDelivery } from './v2-delivery.js';
 
 const $ = id => document.getElementById(id);
-// 样张使用 Pexels 免费照片经本项目六套画风生成；照片页对应 id 顺序：
+// 前六张使用 Pexels 免费照片经对应画风生成；照片页对应 id 顺序：
 // 37186482、2808320、30315828、26968200、18011893、33117562。
 // 来源：https://www.pexels.com/photo/<id>/；打包的是生成后的缩略图。
+// 新增四张的照片来源、上游版本和实际生成提示词见 skills/samples.json。
 const styles = [
   ['photo-abstract-editorial', '象牙抽象编辑'],
   ['scenes-gathered-zine-v1-3', '实景拼贴 Zine'],
@@ -15,9 +16,13 @@ const styles = [
   ['gc-minimal-zine-poster', '极简 Zine 海报'],
   ['heytea-style', '喜茶风格'],
   ['ian-xiaohei-illustrations', '小黑怪诞配图'],
+  ['postmark-watercolor', '水彩邮记'],
+  ['ukiyoe-picture', '木版旅绘'],
+  ['mono-color', '双色印刷'],
+  ['layered-sticker', '贴纸手账'],
 ];
-const fonts = { hand: ['霞鹜文楷', 'var(--hand)'], serif: ['宋体', 'PostcardSerif, SimSun, serif'], script: ['手写体', 'PostcardScript, var(--hand)'] };
-let draft = { version: 1, original: '', image: '', skill: styles[0][0], text: '', font: 'hand', bilingual: false, tone: 'poetic', ink: null, voice: null, music: null, stamp: { color: 'brown', text: '一张' }, createdAt: new Date().toISOString() };
+const fonts = { sans: ['简洁', 'var(--ui)'], hand: ['霞鹜文楷', 'var(--hand)'], serif: ['宋体', 'PostcardSerif, SimSun, serif'], script: ['手写体', 'PostcardScript, var(--hand)'] };
+let draft = { version: 1, layout: 'split', original: '', image: '', skill: styles[0][0], text: '', font: 'hand', bilingual: false, tone: 'poetic', ink: null, voice: null, music: null, stamp: { color: 'brown', text: '一张' }, createdAt: new Date().toISOString() };
 const blankDraft = structuredClone(draft);
 let noticeTimer, saveTimer, revision = 0, savedRevision = 0, audioBusy = false, photoBusy = false, showingOriginal = false;
 let imageRequest, textRequest, importVersion = 0, suggestion = '', previousText = null, liveZoom = false;
@@ -64,6 +69,8 @@ function selectTool(name, focus = false) {
 function render() {
   const image = showingOriginal ? draft.original : draft.image || draft.original;
   $('photoImage').hidden = !image;
+  $('photoImage').style.objectFit = !showingOriginal && draft.image ? 'contain' : 'cover';
+  $('photoImage').style.backgroundColor = '#f3f0e8';
   if (image && $('photoImage').getAttribute('src') !== image) $('photoImage').src = image;
   if (!image) $('photoImage').removeAttribute('src');
   $('photoPlaceholder').hidden = !!image; $('photoBadge').hidden = !image;
@@ -82,6 +89,7 @@ function render() {
   document.querySelector('.font-label').textContent = (fonts[draft.font] || fonts.hand)[0];
   document.querySelectorAll('[data-skill]').forEach(button => button.setAttribute('aria-pressed', String(button.dataset.skill === draft.skill)));
   $('postcard').dataset.stamp = draft.stamp.color;
+  $('postcard').dataset.layout = ['split', 'stack', 'photo'].includes(draft.layout) ? draft.layout : 'split';
   $('postageImage').src = 'v2-assets/stamps/' + draft.stamp.color + '.svg';
   document.querySelector('#postcard .postage-large').textContent = draft.stamp.text;
   document.querySelector('#postcard .postage-large').style.fontSize = draft.stamp.text.length > 4 ? '6px' : '9px';

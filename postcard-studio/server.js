@@ -168,11 +168,15 @@ function cardContent(payload, previous = {}) {
     stamp: String(value.stamp || '').slice(0, 32),
     audio: sound(value.audio), backgroundAudio: sound(value.backgroundAudio),
     editor: {
-      version: 1, font: ['hand', 'serif', 'script'].includes(editor.font) ? editor.font : 'hand',
+      version: 1, font: ['hand', 'serif', 'script', 'sans'].includes(editor.font) ? editor.font : 'hand',
+      layout: ['split', 'stack', 'photo'].includes(editor.layout) ? editor.layout : 'split',
       bilingual: !!editor.bilingual, stylized: editor.stylized !== false,
       stampColor: ['brown', 'red', 'blue', 'green', 'violet'].includes(editor.stampColor) ? editor.stampColor : 'brown',
       createdAt: Number.isFinite(Date.parse(editor.createdAt)) ? editor.createdAt : new Date().toISOString(),
       ink: ink ? { x: bounded(ink.x, .57), y: bounded(ink.y, .69), w: bounded(ink.w, .28), h: bounded(ink.h, .22),
+        color: /^#[0-9a-f]{6}$/i.test(ink.color || '') ? ink.color : '#594735',
+        lineWidth: Number.isFinite(ink.lineWidth) ? Math.max(1, Math.min(8, ink.lineWidth)) : 2.5,
+        canvasWidth: Number.isFinite(ink.canvasWidth) ? Math.max(1, Math.min(4096, ink.canvasWidth)) : undefined,
         strokes: Array.isArray(ink.strokes) ? ink.strokes.slice(0, 1000).filter(Array.isArray).map(stroke => stroke.slice(0, 10000).filter(point => Array.isArray(point) && point.length === 2 && point.every(Number.isFinite))) : [] } : null,
     },
     skill: String(value.skill || '').slice(0, 60), tone: String(value.tone || '').slice(0, 30),
@@ -181,6 +185,7 @@ function cardContent(payload, previous = {}) {
 
 function profileFor(user) {
   return { username: user.username, nickname: user.profile?.nickname || user.username,
+    avatar: user.profile?.avatar || '',
     bio: user.profile?.bio || '', email: user.profile?.email || '', signature: user.profile?.signature || '',
     preferences: { font: 'hand', bilingual: false, tone: 'poetic', ...user.profile?.preferences } };
 }
@@ -188,12 +193,14 @@ function postForViewer(post, db, viewer) {
   const users = loadUsers().users;
   const author = users.find(user => user.username === post.author);
   const current = users.find(user => user.username === viewer);
-  return { ...post, authorName: author?.profile?.nickname || post.author,
-    authorBio: author?.profile?.bio || '', commentCount: db.comments.filter(comment => comment.postId === post.id).length,
+  return { ...post, authorName: author?.profile?.nickname || post.authorNickname || post.author,
+    authorNickname: author?.profile?.nickname || post.authorNickname || post.author,
+    authorAvatar: author?.profile?.avatar || post.authorAvatar || '',
+    authorBio: author?.profile?.bio || post.authorBio || '', commentCount: db.comments.filter(comment => comment.postId === post.id).length,
     liked: (post.likers || []).includes(viewer), collected: (current?.favorites || []).includes(post.id) };
 }
 
-// ---------- 6 个随项目部署的画风 skill 注册表 ----------
+// ---------- 随项目部署的画风 skill 注册表 ----------
 // 每个 skill 的提示词文件运行时读取进内存；读取失败只记录不崩，其他 skill 仍可用
 const SKILLS_ROOT = path.join(__dirname, 'skills');
 const SKILLS = [
@@ -255,6 +262,42 @@ const SKILLS = [
     promptFile: 'references/prompt-template.md',
     directive: 'Treat the attached image as the content/theme source; do NOT reproduce the original photograph. Generate a pure-white-background minimalist black hand-drawn illustration featuring 小黑 (a small solid-black absurd creature with white dot eyes) performing a core conceptual action inspired by the photo, following the skill spec below.',
     headerLabel: 'SKILL PROMPT: ian-xiaohei-illustrations',
+  },
+  {
+    id: 'postmark-watercolor',
+    name: '水彩邮记',
+    desc: '透明水彩晕染 + 纪念邮票纸边',
+    dir: path.join(SKILLS_ROOT, 'postmark-watercolor'),
+    promptFile: 'SKILL.md',
+    directive: 'Repaint the supplied photograph into one finished vertical 3:5 watercolor commemorative-stamp artwork. Preserve the source scene and use the postcard adaptation below; omit official denominations, extra cancellation marks and invented location metadata.',
+    headerLabel: 'SKILL PROMPT: postmark-watercolor',
+  },
+  {
+    id: 'ukiyoe-picture',
+    name: '木版旅绘',
+    desc: '木刻轮廓 + 克制色块 + 和纸质感',
+    dir: path.join(SKILLS_ROOT, 'ukiyoe-picture'),
+    promptFile: 'SKILL.md',
+    directive: 'Transform the supplied photograph into one vertical 3:5 modern woodblock travel print. Keep its composition anchors, recognizable subjects and cultural identity, using flat carved shapes, muted source-derived colors, a quiet print frame and a short title.',
+    headerLabel: 'SKILL PROMPT: ukiyoe-picture',
+  },
+  {
+    id: 'mono-color',
+    name: '双色印刷',
+    desc: '两色套印 + 网点颗粒 + 编辑排版',
+    dir: path.join(SKILLS_ROOT, 'mono-color'),
+    promptFile: 'SKILL.md',
+    directive: 'Reinterpret the supplied photograph as one vertical 3:5 editorial postcard using exactly two assigned ink plates, mechanical print screening and visible neutral paper. Keep the subject recognizable and compose one short scene-derived title with deliberate typography.',
+    headerLabel: 'SKILL PROMPT: mono-color',
+  },
+  {
+    id: 'layered-sticker',
+    name: '贴纸手账',
+    desc: '真实照片分层 + 干净白边 + 轻盈留白',
+    dir: path.join(SKILLS_ROOT, 'layered-sticker'),
+    promptFile: 'SKILL.md',
+    directive: 'Use visual-memory-translator layered_sticker_reassembly mode only. Recompose the supplied photo into a single vertical 3:5 memory page with at most three truthful photographic layers, clean white sticker edges and generous whitespace. Keep people and their original crop intact; no preview grid or holiday overlay.',
+    headerLabel: 'SKILL PROMPT: layered-sticker',
   },
 ];
 
@@ -932,6 +975,12 @@ const server = http.createServer(async (req, res) => {
             if (typeof payload[field] === 'string') profile[field] = payload[field].trim().slice(0, limit);
           }
           if (profile.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(profile.email)) return jsonErr(res, 400, '请输入正确的邮箱地址');
+          if (typeof payload.avatar === 'string' && payload.avatar !== profile.avatar) {
+            if (!/^data:image\/(jpeg|png|webp);base64,[A-Za-z0-9+/]+=*$/.test(payload.avatar)) {
+              return jsonErr(res, 400, '请选择有效的头像图片');
+            }
+            profile.avatar = '/community_img/' + saveImageFromDataUrl(payload.avatar);
+          }
           if (payload.preferences) {
             const preferences = payload.preferences;
             if (['hand', 'serif', 'script'].includes(preferences.font)) profile.preferences.font = preferences.font;

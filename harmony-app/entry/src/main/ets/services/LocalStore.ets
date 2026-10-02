@@ -1,6 +1,7 @@
 import { common } from '@kit.AbilityKit';
 import { fileIo } from '@kit.CoreFileKit';
-import { Postcard, LocalSession } from '../model/Postcard';
+import { util } from '@kit.ArkTS';
+import { Postcard, LocalSession, DraftIndex, DraftEntry, ActiveDraft } from '../model/Postcard';
 
 export class LocalStore {
   private context: common.UIAbilityContext;
@@ -21,7 +22,47 @@ export class LocalStore {
     fileIo.renameSync(temp, path);
   }
 
-  saveDraft(card: Postcard): void { this.write('draft', JSON.stringify(card)); }
+  loadDraft(): Postcard | undefined {
+    const active = this.read<ActiveDraft>('draft-current');
+    if (active) { return this.read<Postcard>('draft-' + active.id); }
+    // 旧版只有一张草稿，第一次升级时迁移，保留旧文件。
+    const legacy = this.read<Postcard>('draft');
+    if (legacy) { this.saveDraft(legacy); }
+    return legacy;
+  }
+
+  saveDraft(card: Postcard, activate: boolean = true): void {
+    if (!card.draftId) { card.draftId = util.generateRandomUUID(); }
+    const name = 'draft-' + card.draftId;
+    const previous = this.read<Postcard>(name);
+    const content = JSON.stringify(card);
+    const index = this.read<DraftIndex[]>('draft-index') || [];
+    const meaningful = !!(card.image || card.originalImage || card.sentence || card.handwriting || card.audio || card.backgroundAudio || card.title);
+    if (content !== JSON.stringify(previous)) {
+      this.write(name, content);
+      const others = index.filter((item: DraftIndex) => item.id !== card.draftId);
+      if (meaningful) { others.unshift({ id: card.draftId, title: card.title, updatedAt: Date.now() }); }
+      this.write('draft-index', JSON.stringify(others));
+    }
+    if (activate) { const active: ActiveDraft = { id: card.draftId }; this.write('draft-current', JSON.stringify(active)); }
+  }
+
+  listDrafts(): DraftEntry[] {
+    const index = this.read<DraftIndex[]>('draft-index') || [];
+    const entries: DraftEntry[] = [];
+    index.forEach((item: DraftIndex) => {
+      const card = this.read<Postcard>('draft-' + item.id);
+      if (card) { entries.push({ id: item.id, updatedAt: item.updatedAt, card: card }); }
+    });
+    return entries;
+  }
+
+  deleteDraft(id: string): void {
+    const index = this.read<DraftIndex[]>('draft-index') || [];
+    this.write('draft-index', JSON.stringify(index.filter((item: DraftIndex) => item.id !== id)));
+    const path = this.context.filesDir + '/draft-' + id + '.json';
+    if (fileIo.accessSync(path)) { fileIo.unlinkSync(path); }
+  }
   saveSession(session: LocalSession): void { this.write('session', JSON.stringify(session)); }
   saveWork(card: Postcard): void {
     const works = this.read<Postcard[]>('works') || [];

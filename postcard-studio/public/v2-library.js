@@ -1,4 +1,5 @@
 import { createCardRenderer, draftPayload, workDraft, mediaSource } from './v2-card.js';
+import { readDataURL, loadImage } from './v2-draft.js';
 
 export function setupLibrary({ getDraft, loadDraft, markStored, applyPreferences, setStamp, isBusy, stopAudio, notice }) {
   const $ = id => document.getElementById(id);
@@ -53,8 +54,19 @@ export function setupLibrary({ getDraft, loadDraft, markStored, applyPreferences
   function renderProfile() {
     $('profileName').textContent = user?.nickname || '给生活，留一张纪念';
     $('profileAvatar').textContent = (user?.nickname || user?.username || '一').slice(0, 1);
+    if (user?.avatar) {
+      const image = make('img'); image.src = mediaSource(user.avatar); image.alt = '我的头像';
+      $('profileAvatar').replaceChildren(image);
+    }
     $('profileBio').textContent = user ? user.bio || '把生活，做成明信片。' : '登录后，收藏风景，也珍藏自己的心意。';
     $('profileLogin').hidden = !!user; $('logoutAccount').hidden = !user;
+  }
+  function renderAvatarPreview() {
+    $('avatarPreview').textContent = (user?.nickname || user?.username || '一').slice(0, 1);
+    if (user?.avatar) {
+      const image = make('img'); image.src = mediaSource(user.avatar); image.alt = '我的头像';
+      $('avatarPreview').replaceChildren(image);
+    }
   }
   function empty(title, description, actionLabel, action) {
     const box = make('div', 'empty-state'); box.innerHTML = icon(scope === 'private' ? 'mail' : 'gallery');
@@ -78,7 +90,11 @@ export function setupLibrary({ getDraft, loadDraft, markStored, applyPreferences
     const image = make('img', 'cover'); image.src = mediaSource(item.image); image.alt = ''; image.loading = 'lazy';
     const copy = make('div', 'item-copy');
     copy.append(make('h3', '', item.title || (kind === 'sent' ? '寄给 ' + item.toName : kind === 'received' ? '来自 ' + item.fromName : '未命名的明信片')));
-    copy.append(make('p', '', kind === 'public' ? item.authorName || item.author : date(item.createdAt) + (kind === 'sent' ? ' · 寄给 ' + item.toName : kind === 'received' ? ' · 来自 ' + item.fromName : ' · 我的创作')));
+    const byline = make('p', '', kind === 'public' ? item.authorName || item.author : date(item.createdAt) + (kind === 'sent' ? ' · 寄给 ' + item.toName : kind === 'received' ? ' · 来自 ' + item.fromName : ' · 我的创作'));
+    if (kind === 'public' && mediaSource(item.authorAvatar)) {
+      const avatar = make('img', 'author-avatar'); avatar.src = mediaSource(item.authorAvatar); avatar.alt = ''; byline.prepend(avatar);
+    }
+    copy.append(byline);
     if (kind === 'public') {
       const stats = make('div', 'item-stats');
       for (const [name, value] of [['heart', item.likes || 0], ['comment', item.commentCount || 0]]) { const stat = make('span'); stat.innerHTML = icon(name); stat.append(document.createTextNode(String(value))); stats.append(stat); }
@@ -155,6 +171,10 @@ export function setupLibrary({ getDraft, loadDraft, markStored, applyPreferences
       cardView?.dispose(); cardView = renderCard(detail); $('detailCard').replaceChildren(cardView.element);
       const author = detail.authorName || detail.author || detail.ownerNick || detail.fromName || '一位朋友';
       $('detailAuthor').textContent = author; $('detailAuthor').title = detail.authorBio || ''; $('detailAvatar').textContent = author.slice(0, 1); socialState();
+      if (mediaSource(detail.authorAvatar)) {
+        const avatar = make('img', 'author-avatar'); avatar.src = mediaSource(detail.authorAvatar); avatar.alt = author + '的头像'; $('detailAvatar').replaceChildren(avatar);
+      }
+      if (detail.demo) $('detailVisibility').textContent = '公开作品 · 演示';
     }
     draw();
     if (kind !== 'public') return;
@@ -208,6 +228,7 @@ export function setupLibrary({ getDraft, loadDraft, markStored, applyPreferences
       $('settingsTitle').textContent = { profile: '个人资料', preferences: '偏好设置' }[mode];
       for (const [id, key] of [['profileFields', 'profile'], ['preferenceFields', 'preferences']]) $(id).hidden = mode !== key;
       $('nicknameField').value = user.nickname; $('bioField').value = user.bio;
+      renderAvatarPreview();
       $('defaultFont').value = user.preferences.font; $('defaultTone').value = user.preferences.tone; $('defaultBilingual').checked = user.preferences.bilingual;
       $('settingsError').textContent = ''; $('settingsDialog').showModal();
     });
@@ -223,6 +244,27 @@ export function setupLibrary({ getDraft, loadDraft, markStored, applyPreferences
   $('resumeLocalDraft').onclick = () => navigate('create');
   $('storeLocalDraft').onclick = openStore;
   $('profileLogin').onclick = () => requireUser(() => renderProfile());
+  $('profileAvatar').onclick = () => openSettings('profile');
+  $('importAvatar').onclick = () => $('avatarInput').click();
+  $('avatarInput').onchange = async () => {
+    const file = $('avatarInput').files[0]; $('avatarInput').value = '';
+    if (!file) return;
+    const sessionToken = token;
+    $('importAvatar').disabled = true; $('settingsSubmit').disabled = true; $('settingsError').textContent = '';
+    try {
+      const image = await loadImage(await readDataURL(file));
+      const size = Math.min(image.naturalWidth, image.naturalHeight);
+      const canvas = document.createElement('canvas'); canvas.width = canvas.height = Math.min(512, size);
+      const context = canvas.getContext('2d');
+      context.fillStyle = '#fff'; context.fillRect(0, 0, canvas.width, canvas.height);
+      context.drawImage(image, (image.naturalWidth - size) / 2, (image.naturalHeight - size) / 2, size, size, 0, 0, canvas.width, canvas.height);
+      if (sessionToken !== token) return;
+      const result = await request('/api/auth/profile', { avatar: canvas.toDataURL('image/jpeg', .88) });
+      if (sessionToken !== token) return;
+      user = result.profile; renderProfile(); renderAvatarPreview(); notice('头像已更新。');
+    } catch (error) { $('settingsError').textContent = error.message; }
+    finally { $('importAvatar').disabled = false; $('settingsSubmit').disabled = false; }
+  };
   $('myFavorites').onclick = () => { scope = 'private'; filter = 'favorites'; navigate('gallery'); };
   $('myStamps').onclick = () => $('stampsDialog').showModal();
   $('openHelp').onclick = () => $('helpDialog').showModal();

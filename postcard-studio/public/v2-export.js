@@ -42,12 +42,18 @@ export async function exportPostcard(payload, template) {
     ctx.fillStyle = '#fff9ea'; ctx.fillRect(0, 0, 1400, 900);
     const paper = await loadImage('v2-assets/paper.svg'); ctx.drawImage(paper, 0, 0, 1400, 900);
     const photo = rect('.card-photo'), image = await loadImage(payload.image);
-    const scale = Math.max(photo.w / image.width, photo.h / image.height);
+    const contain = getComputedStyle(photo.element.querySelector('img')).objectFit === 'contain';
+    const scale = (contain ? Math.min : Math.max)(photo.w / image.width, photo.h / image.height);
+    ctx.fillStyle = '#f3f0e8'; ctx.fillRect(photo.x, photo.y, photo.w, photo.h);
     ctx.save(); ctx.beginPath(); ctx.rect(photo.x, photo.y, photo.w, photo.h); ctx.clip();
-    ctx.drawImage(image, photo.x + (photo.w - image.width * scale) * .46, photo.y + (photo.h - image.height * scale) / 2, image.width * scale, image.height * scale); ctx.restore();
+    ctx.drawImage(image, photo.x + (photo.w - image.width * scale) * (contain ? .5 : .46), photo.y + (photo.h - image.height * scale) / 2, image.width * scale, image.height * scale); ctx.restore();
     const message = rect('.card-message');
-    ctx.strokeStyle = '#b5a78930'; ctx.lineWidth = 1;
-    for (let y = message.y + message.h * .14; y < message.y + message.h; y += message.h * .143) { ctx.beginPath(); ctx.moveTo(message.x, y); ctx.lineTo(message.x + message.w, y); ctx.stroke(); }
+    if (card.dataset.layout === 'photo') {
+      ctx.fillStyle = '#fff9eaed'; ctx.fillRect(message.x, message.y, message.w, message.h);
+    } else if (card.dataset.layout === 'split') {
+      ctx.strokeStyle = '#b5a78930'; ctx.lineWidth = 1;
+      for (let y = message.y + message.h * .14; y < message.y + message.h; y += message.h * .143) { ctx.beginPath(); ctx.moveTo(message.x, y); ctx.lineTo(message.x + message.w, y); ctx.stroke(); }
+    }
     // 用浏览器排好的字符位置绘制，保存换行、字体和长文缩字号结果。
     const drawText = element => {
       if (element.hidden || !element.textContent) return;
@@ -70,7 +76,7 @@ export async function exportPostcard(payload, template) {
     drawText(copy); drawText(card.querySelector('.card-date'));
     const mark = card.querySelector('.postage-mark');
     const mw = mark.clientWidth, mh = mark.clientHeight, s = Math.min(mw / 94, mh / 76);
-    ctx.save(); ctx.translate(message.x + mark.offsetLeft + mw / 2, message.y + mark.offsetTop + mh / 2); ctx.rotate(9 * Math.PI / 180);
+    ctx.save(); ctx.translate(message.x + mark.offsetLeft + mw / 2, message.y + mark.offsetTop + mh / 2); ctx.rotate(card.dataset.layout === 'split' ? 9 * Math.PI / 180 : 0);
     ctx.translate(-94 * s / 2, -76 * s / 2); ctx.scale(s, s);
     ctx.drawImage(await loadImage(mark.querySelector('img').src), 0, 0, 94, 76);
     ctx.fillStyle = getComputedStyle(mark).color; ctx.textAlign = 'center';

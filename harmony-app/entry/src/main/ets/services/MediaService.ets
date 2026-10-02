@@ -18,7 +18,7 @@ export class MediaService {
     } finally { fileIo.closeSync(file); }
   }
 
-  static async choosePhoto(context: common.UIAbilityContext, takePhoto: boolean): Promise<string> {
+  static async choosePhoto(context: common.UIAbilityContext, takePhoto: boolean, maxEdge: number = 1600): Promise<string> {
     let uri = '';
     if (takePhoto) {
       const path = context.cacheDir + '/capture.jpg';
@@ -42,7 +42,7 @@ export class MediaService {
     const packer = image.createImagePacker();
     try {
       const info = await source.getImageInfo();
-      const ratio = Math.min(1, 1600 / Math.max(info.size.width, info.size.height));
+      const ratio = Math.min(1, maxEdge / Math.max(info.size.width, info.size.height));
       pixels = await source.createPixelMap({ desiredSize: {
         width: Math.max(1, Math.round(info.size.width * ratio)), height: Math.max(1, Math.round(info.size.height * ratio))
       }});

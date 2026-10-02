@@ -267,3 +267,21 @@ select,input{font:inherit;color:var(--ink);border:1px solid var(--line);border-r
 .stamp-options>button{width:55px;height:55px}
 .stamp-collection{gap:4px;flex-wrap:wrap}
 .stamp-collection img{width:60px;height:60px}
+
+/* 接收鸿蒙明信片时保留版式，仍使用原卡面的纸张、文字和可播放声音。 */
+.postcard[data-layout=stack]{grid-template-columns:minmax(0,1fr);grid-template-rows:56% minmax(0,1fr);gap:2.5cqw}
+.postcard[data-layout=stack] .card-message{margin:0;background:none}
+.postcard[data-layout=stack] .card-copy{top:0;left:0;width:74%;height:calc(100% - 3cqw);line-height:1.4}
+.postcard[data-layout=stack] .card-date{left:0;bottom:0}
+.postcard[data-layout=stack] .postage-mark{right:0;top:0;width:21.7%;height:16cqw;transform:none}
+.postcard[data-layout=stack] .sound-sticker{right:0;bottom:0;width:10%;transform:none}
+.postcard[data-layout=photo]{display:block}
+.postcard[data-layout=photo] .card-photo{position:absolute;inset:6.2% 4%;width:92%;height:87.6%}
+.postcard[data-layout=photo] .card-message{position:absolute;left:37%;top:56%;width:53%;height:34%;margin:0;background:#fff9eaed}
+.postcard[data-layout=photo] .card-copy{top:7%;left:4%;width:92%;height:72%;line-height:1.4}
+.postcard[data-layout=photo] .card-date{left:4%;bottom:5%}
+.postcard[data-layout=photo] .postage-mark{right:0;top:-140%;width:38%;height:16cqw;transform:none}
+.postcard[data-layout=photo] .sound-sticker{left:-58%;right:auto;bottom:0;width:19%;transform:none}
+.postcard[data-layout=stack] .blank-message{top:0;width:74%}
+.postcard[data-layout=photo] .blank-message{top:10%;left:4%;width:92%}
+.item-copy p:has(.author-avatar){display:flex;align-items:center;gap:6px}.author-avatar{width:22px;height:22px;border-radius:50%;object-fit:cover;flex:none}.small-avatar .author-avatar{width:100%;height:100%}
