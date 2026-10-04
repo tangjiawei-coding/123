@@ -1,0 +1,114 @@
+% 使用 XeLaTeX 编译。修改下方信息及五段正文即可；无需改动版式。
+\documentclass[UTF8,a4paper,11pt,fontset=fandol]{ctexart}
+\usepackage[top=23mm,bottom=22mm,left=24mm,right=24mm]{geometry}
+\usepackage[table]{xcolor}
+\usepackage{array,tabularx,fancyhdr}
+\usepackage{tikz}
+\usepackage{hyperref}
+\definecolor{Ink}{HTML}{473A2E}
+\definecolor{Accent}{HTML}{8B7259}
+\definecolor{Muted}{HTML}{91877A}
+\definecolor{Rule}{HTML}{D9D0C3}
+\definecolor{Paper}{HTML}{FEFCF8}
+\hypersetup{unicode=true,colorlinks=true,linkcolor=Ink,urlcolor=Accent,
+  pdftitle={一张 · 作品说明文档},pdfauthor={}}
+\pagecolor{Paper}
+\color{Ink}
+\setlength{\parindent}{2em}
+\setlength{\parskip}{0.35em}
+\linespread{1.45}
+\setlength{\headheight}{16pt}
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[L]{\small\color{Muted}\WorkName\quad /\quad 作品说明}
+\fancyhead[R]{\small\color{Muted}移动应用创新赛}
+\fancyfoot[L]{\footnotesize\color{Muted}复赛作品说明文档}
+\fancyfoot[R]{\small\color{Accent}\thepage}
+\renewcommand{\headrulewidth}{0pt}
+\renewcommand{\footrulewidth}{0pt}
+
+% 首页信息：赛事届次、学校与团队资料按实际报名信息填写。
+\newcommand{\Competition}{中国高校计算机大赛}
+\newcommand{\Track}{移动应用创新赛}
+\newcommand{\WorkName}{一张}
+\newcommand{\WorkSubtitle}{把生活，做成明信片。}
+\newcommand{\School}{}
+\newcommand{\TeamName}{}
+\newcommand{\TeamMembers}{}
+\newcommand{\Advisor}{}
+\newcommand{\Contact}{}
+\newcommand{\Platform}{iPhone / iPad · Swift Playgrounds}
+\newcommand{\VersionDate}{苹果版体验版 · 2026年10月4日}
+
+% ===== 作品说明正文；首页未知信息留空，不代填团队资料 =====
+\newcommand{\BackgroundText}{手机里存着许多照片：路上的晚霞、朋友的笑脸、趴在窗边的小猫。拍下时觉得值得纪念，后来却很少再翻看。直接发给朋友虽然方便，但照片、文字和语音常常分散在几条消息里，过后也不容易一起找回。“一张”面向喜欢记录生活、想给亲友分享近况，又不擅长设计和写文案的人。用户选一张照片，借助AI制作画面，再加上亲手写的字和想说的话，把随手拍下的生活认真整理一下，让每张照片都有自己的故事，也让收到它的人知道你此时此刻的感受。}
+\newcommand{\CompetitorText}{微信适合快速发送照片、文字和语音；Canva提供明信片模板、拖放编辑和AI设计工具；Slowly以笔友和书信交流为主，强调写信与等待。“一张”选择把照片、笔迹、文字和声音放在同一张卡片里，围绕一次分享完成创作与接收。用户先用AI得到画面和文案的起点，再按自己的意思修改，留下手写与录音，最后通过链接送给指定的人。它的特别之处在于完整的使用过程：普通照片经过整理，成为一张能看、能读、能听，也方便日后重新打开的个人明信片。}
+\newcommand{\FeasibilityText}{客户端使用Swift和SwiftUI，提供Swift Playgrounds的.swiftpm项目，界面与资源均包含在工程中，支持iPhone与iPad。照片导入、手写和草稿保存在设备上；录音使用AVFoundation，图片导出调用系统相册与分享能力。服务器采用Node.js，负责AI调用、账号、云端作品和网页接收页面，手机无需运行大型模型。画面与文案分别生成，一项失败可保留另一项结果；联网恢复后自动重连，离线仍可编辑本机草稿。目前已通过模拟器的创作入口、工具切换和草稿保留检查，以及账号、作品、互动与链接等接口检查，也已在iPhone上安装体验。AI生成与云端功能仍依赖网络和服务商额度。后续重点打磨真实使用中的生成质量、等待体验和分享稳定性。}
+\newcommand{\InnovationText}{“一张”把照片当作一次表达的起点。用户选好画风后，AI根据照片生成画面和文案，帮助不擅长设计或不知道写什么的人先做出一张卡片；随后仍可修改文字、切换版式，并点击画面查看原图。用户也能用自己的笔迹写字、画画，调整笔色、粗细、大小和位置，添加邮戳，再录下一段留言。AI提供起点，最后的内容由用户决定。分享时可填写收件人和署名，对方通过链接打开完整卡片，点击收听声音，不必先安装应用。草稿支持继续编辑、重命名、复制和删除，让一张卡片可以分次完成；愿意公开的作品还可放进展览馆，获得点赞、收藏和评论。整个过程从自己的照片出发，把画面、文字和声音收在一起，让一次分享既有好看的样子，也保留分享者自己的表达。}
+\newcommand{\ProspectText}{“一张”适合旅行分享、毕业留念、节日祝福，也适合把朋友、宠物和日常生活做成写给自己的明信片。不必为了发一张照片学会复杂排版，也不用等到重要的日子才认真分享。后续优先提升生成效果、创作流畅度和链接接收体验，观察用户是否愿意再次制作，收到卡片的人是否愿意回赠。展览馆可以帮助用户发现不同的表达方式，并把喜欢的作品收藏下来。在使用体验稳定后，再探索校园纪念和城市旅行等主题，让功能始终围绕记录生活、整理心情和分享给人展开。}
+
+\newcommand{\InfoRow}[2]{%
+  \rule{0pt}{12mm}\color{Muted}\small #1 & #2\\[2mm]\hline}
+\newcommand{\SectionBlock}[5]{%
+  \par\noindent
+  {\color{Accent}\sffamily\large #1}\hspace{0.8em}%
+  {\heiti\large #2}\hfill{\small\color{Muted}#3字}\par
+  \vspace{-1mm}\noindent{\color{Rule}\rule{\linewidth}{0.5pt}}\par
+  \vspace{2mm}
+  \noindent\begin{minipage}[t][#4][t]{\linewidth}
+    \setlength{\parindent}{2em}\setlength{\parskip}{0.35em}
+    #5\par
+  \end{minipage}\par\vspace{6mm}}
+
+\begin{document}
+\thispagestyle{empty}
+\begin{tikzpicture}[remember picture,overlay]
+  \draw[Rule,line width=0.6pt]
+    ([xshift=24mm,yshift=-18mm]current page.north west) --
+    ([xshift=-24mm,yshift=-18mm]current page.north east);
+  \draw[Accent,line width=2pt]
+    ([xshift=24mm,yshift=-18mm]current page.north west) -- ++(19mm,0);
+\end{tikzpicture}
+\vspace*{5mm}
+{\noindent\small\color{Muted}\Competition\par}
+{\noindent\small\color{Muted}\Track\par}
+\vspace{16mm}
+{\noindent\fontsize{38}{48}\selectfont\heiti\WorkName\par}
+\vspace{2mm}
+{\noindent\large\color{Accent}\WorkSubtitle\par}
+\vspace{13mm}
+{\noindent\fontsize{20}{28}\selectfont\heiti 复赛作品说明文档\par}
+\vspace{10mm}
+\begingroup
+\arrayrulecolor{Rule}
+\setlength{\tabcolsep}{0pt}
+\noindent\begin{tabularx}{\linewidth}{>{\raggedright\arraybackslash}p{31mm}X}
+  \hline
+  \InfoRow{作品名称}{\WorkName}
+  \InfoRow{参赛学校}{\School}
+  \InfoRow{团队名称}{\TeamName}
+  \InfoRow{团队成员}{\TeamMembers}
+  \InfoRow{指导教师}{\Advisor}
+  \InfoRow{联系方式}{\Contact}
+  \InfoRow{运行平台}{\Platform}
+  \InfoRow{版本／日期}{\VersionDate}
+\end{tabularx}
+\endgroup
+\vfill
+{\noindent\footnotesize\color{Muted}作品信息\hfill\WorkName\par}
+
+\clearpage
+{\noindent\fontsize{23}{32}\selectfont\heiti 从需求到实现\par}
+\vspace{7mm}
+\SectionBlock{01}{问题背景与用户分析}{200}{38mm}{\BackgroundText}
+\SectionBlock{02}{相关竞品分析}{200}{38mm}{\CompetitorText}
+\SectionBlock{03}{可行性分析}{300}{58mm}{\FeasibilityText}
+\vspace{-4mm}
+{\noindent\scriptsize\color{Muted}竞品资料：\href{https://www.canva.com/create/postcards/}{Canva明信片工具}；\href{https://slowly.app/cn/}{Slowly官网}。查阅于2026年10月4日。\par}
+
+\clearpage
+{\noindent\fontsize{23}{32}\selectfont\heiti 从创新到应用\par}
+\vspace{7mm}
+\SectionBlock{04}{App 创新点}{300}{78mm}{\InnovationText}
+\SectionBlock{05}{应用前景}{200}{58mm}{\ProspectText}
+\end{document}
