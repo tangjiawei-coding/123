@@ -18,6 +18,14 @@ jobs:
         run: node ios-app/check-backend.cjs
       - name: Build iPhone and iPad app
         run: bash ios-app/build-on-mac.sh
+      - name: Launch on iPhone Simulator
+        run: bash ios-app/check-simulator.sh
+      - name: Inspect Playgrounds manifest support
+        run: find "$(xcode-select -p)/.." -name '*AppleProductTypes*' -print
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Yizhang-iPhone-Screenshot
+          path: ios-app/build/screenshots/
       - uses: actions/upload-artifact@v4
         with:
           name: Yizhang-iOS-Simulator
