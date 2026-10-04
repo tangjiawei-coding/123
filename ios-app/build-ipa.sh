@@ -7,7 +7,7 @@ xcodebuild -project Yizhang.xcodeproj -scheme Yizhang -configuration Release \
   -derivedDataPath build-device CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO build
 app="$PWD/build-device/Build/Products/Release-iphoneos/Yizhang.app"
 test -f "$app/Yizhang"
-xcrun lipo -verify_arch arm64 "$app/Yizhang"
+xcrun lipo "$app/Yizhang" -verify_arch arm64
 test "$(/usr/libexec/PlistBuddy -c 'Print :DTPlatformName' "$app/Info.plist")" = 'iphoneos'
 mkdir -p release
 stage=$(mktemp -d)
@@ -15,6 +15,7 @@ trap 'rm -rf "$stage"' EXIT
 mkdir "$stage/Payload"
 ditto "$app" "$stage/Payload/Yizhang.app"
 output="$PWD/release/Yizhang-iPhone-unsigned.ipa"
-(cd "$stage" && /usr/bin/zip -qry "$output" Payload)
+(cd "$stage" && /usr/bin/zip -qry Yizhang.ipa Payload)
+mv "$stage/Yizhang.ipa" "$output"
 unzip -t "$output"
 echo "真机 IPA 已生成：$output（尚未签名，请交给 Sideloadly 签名安装）"
