@@ -9,6 +9,9 @@ const config = require('./config.json');
 // 优先从环境变量读取上游 API 密钥，避免明文写入 config.json
 config.apiKey = process.env.POSTCARD_API_KEY || config.apiKey || '';
 config.baseUrl = process.env.POSTCARD_API_BASE_URL || config.baseUrl;
+config.imageModel = process.env.POSTCARD_IMAGE_MODEL || config.imageModel;
+config.textModel = process.env.POSTCARD_TEXT_MODEL || config.textModel;
+config.adminPassword = process.env.POSTCARD_ADMIN_PASSWORD || config.adminPassword || '';
 
 const PORT = Number(process.env.PORT) || config.port || 5123;
 const PUBLIC_DIR = path.join(__dirname, 'public');
@@ -1490,7 +1493,7 @@ const server = http.createServer(async (req, res) => {
         const buf = await readBody(req, 5);
         const payload = JSON.parse(buf.toString('utf8'));
         const pwd = (payload.password || '').toString();
-        if (pwd !== (config.adminPassword || '')) return jsonErr(res, 403, '管理员密码错误');
+        if (!config.adminPassword || pwd !== config.adminPassword) return jsonErr(res, 403, '管理员密码错误或未配置');
         const postId = (payload.postId || '').toString();
         const featuredNote = (payload.featuredNote || '').toString().slice(0, 200);
         if (!postId) return jsonErr(res, 400, '缺少 postId');

@@ -1,0 +1,23 @@
+name: Apple
+on:
+  push:
+    branches: [feat/ios-app]
+    paths: ['ios-app/**', '.github/workflows/ios.yml', 'postcard-studio/**']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  simulator-build:
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build iPhone and iPad app
+        run: bash ios-app/build-on-mac.sh
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Yizhang-iOS-Simulator
+          path: ios-app/build/Build/Products/Debug-iphonesimulator/Yizhang.app
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Yizhang-Swift-Playgrounds
+          path: ios-app/Yizhang.swiftpm/

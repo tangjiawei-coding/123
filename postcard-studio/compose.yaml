@@ -1,0 +1,9 @@
+services:
+  postcard:
+    build: .
+    ports: ["5123:5123"]
+    env_file: .env
+    volumes: ["postcard-data:/data"]
+    restart: unless-stopped
+volumes:
+  postcard-data:

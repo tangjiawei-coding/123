@@ -36,3 +36,14 @@ local.properties
 *.jks
 *.keystore
 /dist/
+
+# Apple / 本地服务端配置
+.build/
+.swiftpm/
+DerivedData/
+xcuserdata/
+*.xcuserstate
+*.ipa
+postcard-studio/.env
+postcard-studio/ecosystem.config.cjs
+ios-app/release/

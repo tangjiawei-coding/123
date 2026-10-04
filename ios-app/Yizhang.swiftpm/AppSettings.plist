@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0"><dict>
+  <!-- 当前测试服务器为 HTTP/IP。换成 HTTPS 后可删除此测试兼容项。 -->
+  <key>NSAppTransportSecurity</key><dict><key>NSAllowsArbitraryLoads</key><true/></dict>
+  <key>NSLocalNetworkUsageDescription</key><string>连接你配置的局域网明信片服务器</string>
+  <key>ITSAppUsesNonExemptEncryption</key><false/>
+</dict></plist>
