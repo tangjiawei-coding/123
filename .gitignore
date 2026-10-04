@@ -47,3 +47,4 @@ xcuserdata/
 postcard-studio/.env
 postcard-studio/ecosystem.config.cjs
 ios-app/release/
+ios-app/build-device/

@@ -7,6 +7,17 @@ on:
 permissions:
   contents: read
 jobs:
+  iphone-package:
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build unsigned iPhone IPA
+        run: bash ios-app/build-ipa.sh
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Yizhang-iPhone-IPA
+          path: ios-app/release/Yizhang-iPhone-unsigned.ipa
+          if-no-files-found: error
   simulator-build:
     runs-on: macos-15
     steps:
