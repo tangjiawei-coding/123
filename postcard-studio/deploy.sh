@@ -2,12 +2,12 @@
 # Postcard 服务端一键部署脚本
 # 适用：阿里云 ECS（Ubuntu / Debian / Alibaba Cloud Linux / CentOS）
 # 用法（在 ECS 上以 root 执行）：
-#   curl -fsSL https://raw.githubusercontent.com/tangjiawei-coding/123/feat/mobile-version/postcard-studio/deploy.sh -o /root/deploy.sh
+#   curl -fsSL https://raw.githubusercontent.com/tangjiawei-coding/123/feat/ios-app/postcard-studio/deploy.sh -o /root/deploy.sh
 #   bash /root/deploy.sh
 set -euo pipefail
 
 APP_DIR="/opt/postcard"
-BRANCH="feat/mobile-version"
+BRANCH="${POSTCARD_BRANCH:-feat/ios-app}"
 REPO="https://github.com/tangjiawei-coding/123.git"
 PORT=5123
 
