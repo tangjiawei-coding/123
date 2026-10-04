@@ -17,11 +17,15 @@ enum GalleryScope: String, CaseIterable { case publicWorks = "公开", cloud = "
     let local = LocalStore(); let voice = VoiceService()
     private var token = ""; private var saveTask: Task<Void, Never>?; private var galleryRevision = 0; private var page = 1
     private var linkPayload: [String: Any]?
+    private var connecting = false
     var api: API { API(baseURL: serverURL, token: token) }
     init() {
         do {
             preferences = try local.read("preferences", as: Preferences.self) ?? Preferences()
             serverURL = UserDefaults.standard.string(forKey: "serverURL") ?? API.defaultURL
+            #if DEBUG
+            if let testURL = ProcessInfo.processInfo.environment["YIZHANG_UI_TEST_SERVER"] { serverURL = testURL }
+            #endif
             username = UserDefaults.standard.string(forKey: "username") ?? ""
             token = SessionKeychain.token(serverURL)
             if token.isEmpty { username = "" }
@@ -50,15 +54,34 @@ enum GalleryScope: String, CaseIterable { case publicWorks = "公开", cloud = "
         do { try local.saveDraft(card); drafts = try local.drafts() }
         catch { status = "草稿未能保存：" + error.localizedDescription }
     }
-    func connect() async {
-        do { styles = try await api.request("/api/skills"); connected = true }
-        catch { connected = false; status = "暂时连不上服务器，仍可编辑本机作品和草稿" }
-        if !token.isEmpty { await loadProfile() }
+    func connect(silent: Bool = false) async {
+        guard !connecting else { return }
+        connecting = true
+        defer { connecting = false }
+        let client = api
+        do {
+            let choices: [Choice] = try await client.request("/api/skills", timeout: 15)
+            guard !Task.isCancelled, client.baseURL == serverURL else { return }
+            styles = choices; connected = true
+        } catch {
+            guard !Task.isCancelled, client.baseURL == serverURL else { return }
+            connected = false
+            if !silent { status = "暂时连不上服务器，仍可编辑本机作品和草稿" }
+        }
+        if !silent && !token.isEmpty { await loadProfile() }
+    }
+    func monitorConnection() async {
+        while !Task.isCancelled {
+            await connect(silent: true)
+            do { try await Task.sleep(nanoseconds: 30_000_000_000) }
+            catch { return }
+        }
     }
     func changeServer(_ url: String) async throws {
         let value = url.trimmingCharacters(in: .whitespacesAndNewlines).trimmingCharacters(in: CharacterSet(charactersIn: "/"))
         guard let parsed = URL(string: value), ["http", "https"].contains(parsed.scheme ?? ""), parsed.host != nil,
               parsed.user == nil, parsed.password == nil, parsed.query == nil, parsed.fragment == nil else { throw AppError(message: "请输入完整的 http:// 或 https:// 服务器地址") }
+        connected = false
         serverURL = value; token = ""; username = ""; profile = Profile(nickname: "", bio: "", avatar: nil)
         UserDefaults.standard.set(value, forKey: "serverURL"); UserDefaults.standard.removeObject(forKey: "username")
         gallery = []; shareLink = nil; linkPayload = nil; galleryRevision += 1
@@ -76,7 +99,7 @@ enum GalleryScope: String, CaseIterable { case publicWorks = "公开", cloud = "
             let source = try await api.imageData(snapshot.originalImage)
             let body: [String: Any] = ["image": source, "text": textOnly ? snapshot.sentence : "", "skill": snapshot.skill, "tone": snapshot.tone, "mode": "fast", "bilingual": snapshot.editor.bilingual]
             if textOnly {
-                let result: GenerateResult = try await api.request("/api/generate-sentence", body: body)
+                let result: GenerateResult = try await api.request("/api/generate-sentence", body: body, timeout: 480)
                 card.sentence = result.sentence ?? ""; return
             }
             let client = api
@@ -92,7 +115,7 @@ enum GalleryScope: String, CaseIterable { case publicWorks = "公开", cloud = "
         }
     }
     private static func generatePart(_ api: API, path: String, body: [String: Any]) async -> Result<GenerateResult, Error> {
-        do { return .success(try await api.request(path, body: body)) } catch { return .failure(error) }
+        do { return .success(try await api.request(path, body: body, timeout: 480)) } catch { return .failure(error) }
     }
     func newDraft() throws { try local.saveDraft(card); voice.stopPlayback(); card = preferences.card(); editorOpen = true; tab = 0; flush() }
     func clearDraft() { let id = card.draftId; voice.stopPlayback(); card = preferences.card(); card.draftId = id; flush() }

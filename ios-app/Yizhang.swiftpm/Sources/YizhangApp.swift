@@ -8,7 +8,10 @@ import SwiftUI
         WindowGroup {
             RootView().environmentObject(store).environmentObject(store.voice)
                 .tint(Palette.accent).preferredColorScheme(.light)
-                .task { await store.connect() }
+                .task { if !store.username.isEmpty { await store.loadProfile() } }
+                .task(id: scenePhase) {
+                    if scenePhase == .active { await store.monitorConnection() }
+                }
                 .onChange(of: scenePhase) { _, phase in
                     if phase != .active { store.voice.finish(); store.voice.stopPlayback(); store.flush() }
                 }

@@ -11,3 +11,6 @@ xcrun simctl launch "$device" com.tangjiawei.yizhang
 sleep 8
 xcrun simctl io "$device" screenshot build/screenshots/iphone-home.png
 xcrun simctl spawn "$device" launchctl list | python3 -c 'import sys; rows=[s.split() for s in sys.stdin if "com.tangjiawei.yizhang" in s]; print(rows); assert rows and rows[0][0].isdigit(), "App exited after launch"; print("PASS: iPhone app remains running")'
+xcodebuild -project Yizhang.xcodeproj -scheme Yizhang -configuration Debug \
+  -destination "platform=iOS Simulator,id=$device" -derivedDataPath build \
+  -resultBundlePath build/screenshots/CreatorFlow.xcresult CODE_SIGNING_ALLOWED=NO test

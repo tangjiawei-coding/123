@@ -9,9 +9,9 @@ struct API {
         if source.hasPrefix("data:") || URL(string: source)?.scheme != nil { return source }
         return baseURL.trimmingCharacters(in: CharacterSet(charactersIn: "/")) + "/" + source.trimmingCharacters(in: CharacterSet(charactersIn: "/"))
     }
-    func request<T: Decodable>(_ path: String, body: [String: Any]? = nil) async throws -> T {
+    func request<T: Decodable>(_ path: String, body: [String: Any]? = nil, timeout: TimeInterval = 30) async throws -> T {
         guard let url = URL(string: absolute(path)) else { throw AppError(message: "服务器地址不正确") }
-        var r = URLRequest(url: url, cachePolicy: .reloadIgnoringLocalCacheData, timeoutInterval: 480)
+        var r = URLRequest(url: url, cachePolicy: .reloadIgnoringLocalCacheData, timeoutInterval: timeout)
         r.setValue("application/json", forHTTPHeaderField: "Content-Type")
         if !token.isEmpty { r.setValue("Bearer " + token, forHTTPHeaderField: "Authorization") }
         if let body { r.httpMethod = "POST"; r.httpBody = try JSONSerialization.data(withJSONObject: body) }

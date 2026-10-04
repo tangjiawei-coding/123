@@ -44,13 +44,18 @@ struct CreatorView: View {
             Text("一张，给世界的温柔").font(Palette.font(32))
             Text("把生活，做成明信片。").font(Palette.font(17)).foregroundStyle(Palette.muted)
             Button {
+                guard !opening else { return }
                 withAnimation(.easeInOut(duration: 0.35)) { opening = true }
                 Task { try? await Task.sleep(nanoseconds: 350_000_000); store.editorOpen = true; opening = false }
             } label: {
-                coverArtwork.allowsHitTesting(false)
+                // 卡片内部的手势不参与封面操作，透明触摸层负责整个入口。
+                ZStack {
+                    coverArtwork.allowsHitTesting(false)
+                    Color.clear.contentShape(Rectangle())
+                }.aspectRatio(14/9, contentMode: .fit)
                     .rotation3DEffect(.degrees(opening ? -65 : -6), axis: (x: 0, y: 1, z: 0))
                     .shadow(color: Palette.ink.opacity(0.15), radius: 18, y: 12).padding(.vertical, 35)
-            }.buttonStyle(.plain)
+            }.buttonStyle(.plain).accessibilityLabel("打开明信片，开始创作").accessibilityIdentifier("creator.open")
             Text("轻轻打开，写下今天。 ").font(Palette.font(17)).frame(maxWidth: .infinity)
             Spacer()
         }.padding(24)
@@ -73,6 +78,7 @@ struct CreatorView: View {
             VStack(spacing: 18) {
                 HStack {
                     Button { voice.finish(); store.flush(); store.editorOpen = false } label: { Image(systemName: "chevron.left") }
+                        .accessibilityLabel("返回创作封面").accessibilityIdentifier("creator.back")
                     Text("编辑明信片").font(.headline); Spacer()
                     Button("清空草稿") { clear = true }.font(.caption)
                     Button("保存草稿") { store.flush(); store.status = "已保存到“我的草稿”" }.font(.caption).buttonStyle(SoftButtonStyle(primary: true))
@@ -129,7 +135,7 @@ struct CreatorView: View {
             Button(store.card.image.isEmpty ? "生成我的明信片" : "按所选画风重新生成") { original = false; Task { await store.generate() } }.buttonStyle(SoftButtonStyle(primary: true))
         case 1:
             Text("想对 Ta 说些什么？").font(Palette.font(20)).frame(maxWidth: .infinity, alignment: .leading)
-            TextEditor(text: $store.card.sentence).font(Palette.font(16)).frame(height: 95).scrollContentBackground(.hidden).padding(8).background(Palette.paper, in: RoundedRectangle(cornerRadius: 8))
+            TextEditor(text: $store.card.sentence).font(Palette.font(16)).frame(height: 95).scrollContentBackground(.hidden).padding(8).background(Palette.paper, in: RoundedRectangle(cornerRadius: 8)).accessibilityIdentifier("creator.message")
                 .onChange(of: store.card.sentence) { _, value in if value.count > 200 { store.card.sentence = String(value.prefix(200)) } }
             HStack { Button("AI 帮我写") { Task { await store.generate(textOnly: true) } }.buttonStyle(SoftButtonStyle()); Toggle("中英双语", isOn: $store.card.editor.bilingual).font(.caption) }
             HStack {
