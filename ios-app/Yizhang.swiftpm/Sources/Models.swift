@@ -21,6 +21,19 @@ struct Editor: Codable, Equatable {
     var version = 1; var font = "hand"; var bilingual = true; var stylized = false
     var stampColor = "brown"; var createdAt = ISO8601DateFormatter().string(from: Date())
     var ink: InkLayout?; var layout: String? = "split"
+    init() {}
+    init(from decoder: Decoder) throws {
+        self.init()
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        version = try c.decodeIfPresent(Int.self, forKey: .version) ?? 1
+        font = try c.decodeIfPresent(String.self, forKey: .font) ?? "hand"
+        bilingual = try c.decodeIfPresent(Bool.self, forKey: .bilingual) ?? true
+        stylized = try c.decodeIfPresent(Bool.self, forKey: .stylized) ?? false
+        stampColor = try c.decodeIfPresent(String.self, forKey: .stampColor) ?? "brown"
+        createdAt = try c.decodeIfPresent(String.self, forKey: .createdAt) ?? createdAt
+        ink = try c.decodeIfPresent(InkLayout.self, forKey: .ink)
+        layout = try c.decodeIfPresent(String.self, forKey: .layout) ?? "split"
+    }
 }
 struct Postcard: Codable, Identifiable, Equatable {
     var draftId = UUID().uuidString; var id = ""; var title = ""

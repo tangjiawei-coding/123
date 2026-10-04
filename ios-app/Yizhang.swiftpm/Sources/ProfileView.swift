@@ -68,6 +68,7 @@ struct ServerSettingsView: View {
             Button("保存并连接") { Task { await store.run("正在连接…") { try await store.changeServer(url); if store.connected { dismiss() } } } }
             if !store.status.isEmpty { Text(store.status).font(.footnote) }
         }.disabled(store.busy).navigationTitle("连接设置").toolbar { Button("取消") { dismiss() }.disabled(store.busy) }.onAppear { url = store.serverURL }
+        }
     }
 }
 struct ProfileEditView: View {

@@ -47,7 +47,7 @@ struct CreatorView: View {
                 withAnimation(.easeInOut(duration: 0.35)) { opening = true }
                 Task { try? await Task.sleep(nanoseconds: 350_000_000); store.editorOpen = true; opening = false }
             } label: {
-                PostcardView(card: coverCard, api: store.api).allowsHitTesting(false)
+                coverArtwork.allowsHitTesting(false)
                     .rotation3DEffect(.degrees(opening ? -65 : -6), axis: (x: 0, y: 1, z: 0))
                     .shadow(color: Palette.ink.opacity(0.15), radius: 18, y: 12).padding(.vertical, 35)
             }.buttonStyle(.plain)
@@ -58,6 +58,15 @@ struct CreatorView: View {
     private var coverCard: Postcard {
         if store.card.hasPhoto { return store.card }
         var card = Postcard(); card.sentence = "有些瞬间，\n想好好留住。\n\n有些心意，\n想慢慢送到。"; return card
+    }
+    @ViewBuilder private var coverArtwork: some View {
+        if store.card.hasPhoto { PostcardView(card: store.card, api: store.api) }
+        else {
+            GeometryReader { geometry in
+                CardArtwork(card: coverCard, images: CardImages(photo: Assets.image("coast-study")))
+                    .frame(width: 560, height: 360).scaleEffect(geometry.size.width/560, anchor: .topLeading)
+            }.aspectRatio(14/9, contentMode: .fit)
+        }
     }
     private var editor: some View {
         ScrollView {
