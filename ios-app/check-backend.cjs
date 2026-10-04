@@ -51,6 +51,13 @@ async function main() {
     assert.equal((await request('/api/myworks?nick=ios_check',undefined,token)).works.length,0);
     await request('/api/auth/logout',{},token);
     await request('/api/community/favorites',undefined,token,401);
+    if (process.env.YIZHANG_NATIVE_CHECK) {
+      await new Promise((resolve, reject) => {
+        const native = spawn(process.env.YIZHANG_NATIVE_CHECK, [base], {stdio:'inherit'});
+        native.on('error', reject);
+        native.on('exit', code => code === 0 ? resolve() : reject(new Error('Swift client check failed: '+code)));
+      });
+    }
     console.log('PASS: '+checks+' backend requests; 10 styles; auth/profile/works/social/link/privacy persistence.');
   } finally {
     server.kill();await new Promise(resolve=>server.once('exit',resolve));

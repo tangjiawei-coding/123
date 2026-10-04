@@ -15,7 +15,10 @@ jobs:
         with:
           node-version: '22'
       - name: Check shared backend
-        run: node ios-app/check-backend.cjs
+        run: |
+          mkdir -p ios-app/build
+          xcrun swiftc ios-app/Yizhang.swiftpm/Sources/Models.swift ios-app/Yizhang.swiftpm/Sources/API.swift ios-app/Yizhang.swiftpm/Sources/LocalStore.swift ios-app/check-native.swift -o ios-app/build/check-native
+          YIZHANG_NATIVE_CHECK="$PWD/ios-app/build/check-native" node ios-app/check-backend.cjs
       - name: Build iPhone and iPad app
         run: bash ios-app/build-on-mac.sh
       - name: Launch on iPhone Simulator

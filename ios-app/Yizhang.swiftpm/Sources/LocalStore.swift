@@ -2,8 +2,8 @@ import Foundation
 
 final class LocalStore {
     let directory: URL
-    init() {
-        directory = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0].appendingPathComponent("Yizhang", isDirectory: true)
+    init(directory: URL? = nil) {
+        self.directory = directory ?? FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0].appendingPathComponent("Yizhang", isDirectory: true)
     }
     func read<T: Decodable>(_ name: String, as type: T.Type) throws -> T? {
         let url = directory.appendingPathComponent(name + ".json")
